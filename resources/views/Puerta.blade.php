@@ -35,11 +35,11 @@
 <body class="bg-gray-100 h-screen relative">
 
     <a href="/"
-        class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">
+        class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12  bg-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">
         <i class="fa-solid fa-house text-lg"></i>
     </a>
 
-    <livewire:puertas.app>
+    <livewire:puertas.app />
 
 </body>
 

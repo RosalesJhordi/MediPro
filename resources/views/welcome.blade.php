@@ -128,7 +128,7 @@
 
             <a href="Ventana" wire:navigate
                 class="flex flex-col items-center justify-center w-40 h-40 p-4 space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
-                <div class="p-4 rounded-2xl bg-gradient-to-tr from-green-400 to-emerald-600 text-white shadow-[0_10px_20px_rgba(16,185,129,0.2)]">
+                <div class="p-4 rounded-2xl bg-gradient-to-tr bg-green-400 to-emerald-600 text-white shadow-[0_10px_20px_rgba(16,185,129,0.2)]">
                     <img src="{{ asset('img/ventana.svg') }}" class="w-10 h-10 " alt="Ventana">
                 </div>
                 <span class="text-sm font-bold text-gray-700">Ventana</span>
@@ -136,7 +136,7 @@
 
             <a href="Puerta" wire:navigate
                 class="flex flex-col items-center justify-center w-40 h-40 p-4 space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
-                <div class="p-4 rounded-2xl bg-gradient-to-tr from-orange-400 to-red-600 text-white shadow-[0_10px_20px_rgba(239,68,68,0.2)]">
+                <div class="p-4 rounded-2xl bg-gradient-to-tr bg-orange-400 to-red-600 text-white shadow-[0_10px_20px_rgba(239,68,68,0.2)]">
                     <img src="{{ asset('img/puerta.svg') }}" class="w-10 h-10" alt="Puerta">
                 </div>
                 <span class="text-sm font-bold text-gray-700">Puerta</span>
