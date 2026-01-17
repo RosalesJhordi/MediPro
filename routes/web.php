@@ -14,16 +14,7 @@ Route::get('Puerta', function (){
 });
 
 
-Route::get('/imprimir-plano', function () {
-    $data = session('datos_plano');
-    if (!$data) return redirect('/Ventana'); // Por si no hay datos
-
-    return view('planos2d', $data);
-});
-Route::get('/imprimir-plano', function () {
-    // Recuperamos los datos de la sesión (los guardaremos al hacer clic)
-    $data = session('datos_plano');
-    if (!$data) return "No hay datos para mostrar";
-
-    return view('planos2d', $data);
+Route::get('/plano-imprimir', function () {
+    $datos = session('datos_lote', []);
+    return view('planos2d', compact('datos'));
 })->name('plano.imprimir');

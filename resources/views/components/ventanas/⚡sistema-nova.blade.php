@@ -13,33 +13,70 @@ new class extends Component {
     public $ordenBloques = [];
     public $planoExportHtml;
 
+    // public function imprimirTodo()
+    // {
+    //     // 1. Sincronizar la ventana que el usuario está viendo actualmente antes de procesar
+    //     $this->ventanas[$this->ventanaActiva] = [
+    //         'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
+    //         'ancho' => $this->ancho,
+    //         'alto' => $this->alto,
+    //         'altoPuente' => $this->altoPuente,
+    //         'numCorredizas' => $this->numCorredizas,
+    //         'numFijos' => $this->numFijos,
+    //     ];
+
+    //     $originalIndex = $this->ventanaActiva;
+    //     $reporteTotal = [];
+
+    //     foreach ($this->ventanas as $index => $v) {
+    //         // 2. Cambiamos el estado del objeto a la ventana actual del bucle
+    //         $this->ancho = $v['ancho'];
+    //         $this->alto = $v['alto'];
+    //         $this->altoPuente = $v['altoPuente'];
+    //         $this->numCorredizas = $v['numCorredizas'];
+    //         $this->numFijos = $v['numFijos'];
+
+    //         // Forzamos a que las propiedades calculadas se refresquen
+    //         // llamando directamente a los métodos internos
+    //         $reporteTotal[] = [
+    //             'nv' => $v['nombre'],
+    //             'ancho' => $this->ancho,
+    //             'alto' => $this->alto,
+    //             'altoInf' => $this->getAltoInfProperty(),
+    //             'altoSup' => $this->getAltoSupProperty(),
+    //             'bloques' => $this->getMedidasBloquesProperty(),
+    //             'sobreluz' => $this->getSobreluzPartesProperty(),
+    //             'detalle' => $this->getDetalleModulosProperty(),
+    //             'catalogo' => $this->data,
+    //         ];
+    //     }
+
+    //     // 3. Restauramos la vista del usuario a como estaba
+    //     $this->cambiarVentana($originalIndex);
+
+    //     // 4. Guardar y disparar
+    //     session()->put('datos_lote', $reporteTotal);
+    //     session()->save();
+
+    //     $this->dispatch('disparar-impresion-total');
+    //     $this->resetearProyecto();
+    // }
+
     public function imprimirTodo()
     {
-        $originalActiva = $this->ventanaActiva; // Guardamos donde estamos
-        $reporteTotal = [];
+        // Sincronizar la ventana que el usuario tiene abierta actualmente
+        $this->cambiarVentana($this->ventanaActiva);
 
-        foreach ($this->ventanas as $index => $v) {
-            // Cambiamos temporalmente para que los "Getters" calculen esta ventana
-            $this->cambiarVentana($index);
+        // Verificamos que no haya datos vacíos por error
+        $datosLimpios = array_map(function ($v) {
+            return $v;
+        }, $this->ventanas);
 
-            $reporteTotal[] = [
-                'nv' => $v['nombre'],
-                'ancho' => $this->ancho,
-                'alto' => $this->alto,
-                'altoInf' => $this->altoInf,
-                'altoSup' => $this->altoSup,
-                'bloques' => $this->medidasBloques,
-                'sobreluz' => $this->sobreluzPartes,
-                'detalle' => $this->detalleModulos,
-                'catalogo' => $this->data,
-            ];
-        }
+        session()->put('datos_lote', $datosLimpios);
+        session()->save();
 
-        // Regresamos a la ventana donde estaba el usuario
-        $this->cambiarVentana($originalActiva);
-
-        session()->put('datos_lote', $reporteTotal);
         $this->dispatch('disparar-impresion-total');
+        $this->resetearProyecto();
     }
     public $data = [];
     public function procesarPerfiles()
@@ -222,6 +259,33 @@ new class extends Component {
 
         return $bloques;
     }
+    public function resetearProyecto()
+    {
+        // Reset de propiedades simples
+        $this->ancho = 205;
+        $this->alto = 165;
+        $this->altoPuente = 130;
+        $this->numCorredizas = 1;
+        $this->numFijos = 2;
+
+        $this->ordenBloques = [];
+        $this->sistemaSelet = null;
+        $this->planoExportHtml = null;
+
+        // Reset de ventanas
+        $this->ventanas = [
+            [
+                'nombre' => 'V - 1',
+                'ancho' => 205,
+                'alto' => 165,
+                'altoPuente' => 130,
+                'numCorredizas' => 1,
+                'numFijos' => 2,
+            ],
+        ];
+
+        $this->ventanaActiva = 0;
+    }
 
     public function getDetalleModulosProperty()
     {
@@ -270,7 +334,15 @@ new class extends Component {
     public function mount()
     {
         $this->procesarPerfiles();
-        $this->agregarVentana();
+        // Inicializar con una ventana
+        $this->ventanas[] = [
+            'nombre' => 'V - 1',
+            'ancho' => 205,
+            'alto' => 165,
+            'altoPuente' => 130,
+            'numCorredizas' => 1,
+            'numFijos' => 2,
+        ];
     }
 
     public $ventanas = [];
@@ -278,25 +350,51 @@ new class extends Component {
 
     public function agregarVentana()
     {
+        $this->cambiarVentana($this->ventanaActiva); // Sincroniza actual
         $nuevoId = count($this->ventanas) + 1;
-        $nombre = "V - $nuevoId";
+        $this->ventanas[] = ['nombre' => "V - $nuevoId", 'ancho' => 205, 'alto' => 165, 'altoPuente' => 130, 'numCorredizas' => 1, 'numFijos' => 2];
+        $this->cambiarVentana(count($this->ventanas) - 1);
+    }
 
-        // Guardamos un "snapshot" de los valores actuales
-        $this->ventanas[] = [
-            'nombre' => $nombre,
+    public function cambiarVentana($index)
+    {
+        // 1. Guardamos TODO lo de la ventana actual antes de movernos
+        // Usamos copias profundas para que los arreglos no se compartan entre índices
+        $this->ventanas[$this->ventanaActiva] = [
+            'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
             'ancho' => $this->ancho,
             'alto' => $this->alto,
             'altoPuente' => $this->altoPuente,
             'numCorredizas' => $this->numCorredizas,
             'numFijos' => $this->numFijos,
+
+            // Forzamos la creación de un arreglo independiente para cada parte
+            'altoInf' => $this->getAltoInfProperty(),
+            'altoSup' => $this->getAltoSupProperty(),
+            'bloques' => json_decode(json_encode($this->getMedidasBloquesProperty()), true),
+            'sobreluz' => json_decode(json_encode($this->getSobreluzPartesProperty()), true),
+            'detalle' => json_decode(json_encode($this->getDetalleModulosProperty()), true),
+            'catalogo' => $this->data, // Guardamos el catálogo vigente en esa ventana
         ];
 
-        $this->ventanaActiva = count($this->ventanas) - 1;
+        // 2. Cambiamos al nuevo índice
+        $this->ventanaActiva = $index;
+
+        // 3. Cargamos los valores de la nueva ventana a los inputs
+        $v = $this->ventanas[$index];
+        $this->ancho = $v['ancho'];
+        $this->alto = $v['alto'];
+        $this->altoPuente = $v['altoPuente'];
+        $this->numCorredizas = $v['numCorredizas'];
+        $this->numFijos = $v['numFijos'];
     }
 
-    public function cambiarVentana($index)
+    private function guardarVentanaActual()
     {
-        // 1. Sincronizamos los datos actuales en la ventana que vamos a dejar
+        if (!isset($this->ventanas[$this->ventanaActiva])) {
+            return;
+        }
+
         $this->ventanas[$this->ventanaActiva] = [
             'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
             'ancho' => $this->ancho,
@@ -305,10 +403,12 @@ new class extends Component {
             'numCorredizas' => $this->numCorredizas,
             'numFijos' => $this->numFijos,
         ];
+    }
 
-        // 2. Cargamos los datos de la nueva ventana seleccionada
-        $this->ventanaActiva = $index;
+    private function cargarVentana($index)
+    {
         $v = $this->ventanas[$index];
+
         $this->ancho = $v['ancho'];
         $this->alto = $v['alto'];
         $this->altoPuente = $v['altoPuente'];
@@ -319,27 +419,35 @@ new class extends Component {
 ?>
 
 <div wire:cloak class="relative p-2 md:p-6 max-w-6xl mx-auto mb-[100px]">
-    <div class="flex items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
-        @foreach ($ventanas as $index => $v)
-            <button wire:click="cambiarVentana({{ $index }})"
-                class="px-6 py-2 text-xs font-black uppercase tracking-tighter transition-all rounded-t-xl border-t border-l border-r {{ $ventanaActiva == $index ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]' : 'bg-gray-100 border-transparent text-gray-400 hover:bg-gray-200' }}">
-                <i class="fa-solid fa-window-maximize mr-2"></i> {{ $v['nombre'] }}
+    <div class="flex justify-between items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
+        <div class="flex gap-">
+            @foreach ($ventanas as $index => $v)
+                <button wire:click="cambiarVentana({{ $index }})"
+                    class="px-6 py-2 text-xs font-black uppercase tracking-tighter transition-all rounded-t-xl border-t border-l border-r {{ $ventanaActiva == $index ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]' : 'bg-gray-100 border-transparent text-gray-400 hover:bg-gray-200' }}">
+                    <i class="fa-solid fa-window-maximize mr-2"></i> {{ $v['nombre'] }}
+                </button>
+            @endforeach
+            <button wire:click="agregarVentana"
+                class="ml-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
+                <i class="fa-solid fa-plus-circle"></i> Nuevo
             </button>
-        @endforeach
+        </div>
+        <div class="flex gap-2">
+            <button
+                class="px-6 py-2 bg-orange-600 text-white text-xs font-black rounded-xl hover:bg-orange-700 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-scissors"></i> Optimizar
+            </button>
 
-        <button wire:click="agregarVentana"
-            class="ml-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
-            <i class="fa-solid fa-plus-circle"></i> Añadir Ventana
-        </button>
-        <button wire:click="imprimirTodo"
-            class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2">
-            <i class="fa-solid fa-file-pdf"></i> IMPRIMIR TODO EL PROYECTO
-        </button>
+            <button wire:click="imprimirTodo"
+                class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i> IMPRIMIR PROYECTO
+            </button>
+        </div>
 
     </div>
 
     <div class="mb-4 px-4">
-        <span class="text-[10px] bg-slate-800 text-white px-3 py-1 rounded-full font-bold">
+        <span class="text-[10px] bg-green-400 text-white px-3 py-1 rounded-full font-bold">
             EDITANDO: {{ $ventanas[$ventanaActiva]['nombre'] }}
         </span>
     </div>
@@ -378,12 +486,7 @@ new class extends Component {
 
     <div
         class="flex flex-col items-center justify-center p-4 border border-gray-200 shadow-inner bg-gray-50 md:p-6 rounded-3xl">
-        <div class="flex items-center justify-end w-full gap-3 my-4">
-            <button wire:click="prepararImpresion"
-                class="group relative h-[45px] w-[45px] flex items-center justify-center bg-white border border-slate-300 rounded-2xl shadow-sm hover:border-blue-500 transition-all">
-                <i class="text-xl fa-solid fa-download text-slate-600 group-hover:text-blue-600"></i>
-            </button>
-        </div>
+
         <iframe id="iframeLote" src="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
 
         <script>
@@ -496,6 +599,12 @@ new class extends Component {
                                     <span class="text-[11px] font-mono font-black text-blue-950">{{ $mod['ancho'] }} x
                                         {{ $mod['alto'] }}</span>
                                 </div>
+
+                                @if ($mod['tipo'] === 'C')
+                                    <div
+                                        class="absolute bottom-0 left-0 w-full h-[4%] bg-black border-t border-gray-900/50 flex items-center justify-center">
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

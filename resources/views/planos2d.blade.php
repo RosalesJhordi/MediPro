@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @page {
-            margin: 1cm;
+            margin: 0;
         }
 
         @media print {
@@ -16,116 +16,176 @@
                 print-color-adjust: exact !important;
             }
 
-            /* SALTO DE PÁGINA CLAVE */
             .page-break {
                 page-break-after: always;
-                display: block;
+                border: none !important;
             }
-
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
         }
 
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             background-color: white;
-            -webkit-print-color-adjust: exact;
         }
 
-        .blueprint-border { border: 6px solid #1a1a1a; }
-        .glass-blue { background-color: #e0f2fe !important; }
-        .glass-dark { background-color: #bae6fd !important; }
-        .bg-gray-800 { background-color: #1f2937 !important; }
+        .blueprint-border {
+            border: 6px solid #1a1a1a;
+        }
+
+        .glass-blue {
+            background-color: #e0f2fe !important;
+        }
+
+        .glass-dark {
+            background-color: #bae6fd !important;
+        }
+
+        .bg-gray-800 {
+            background-color: #1f2937 !important;
+        }
     </style>
 </head>
 
 <body>
 
-    {{-- RECORREMOS TODAS LAS VENTANAS GUARDADAS EN LA SESIÓN --}}
-    @foreach (session('datos_lote', []) as $ventana)
-        <div class="page-break p-4">
+    @foreach ($datos as $ventana)
+        @php
+            $altoTotal = (float) $ventana['alto'];
+            $anchoTotal = (float) $ventana['ancho'];
+            $aInf = (float) ($ventana['altoInf'] ?? $altoTotal);
+            $aSup = (float) ($ventana['altoSup'] ?? 0);
+            $altoPuente = (float) ($ventana['altoPuente'] ?? 0);
 
-            {{-- CABECERA POR VENTANA --}}
-            <div class="mb-10 text-center border-b-2 border-blue-100 pb-4">
+            $sumaAlturas = $aSup + $aInf;
+            $denominador = $sumaAlturas > 0 ? $sumaAlturas : 1;
+
+            $altoSupPct = ($aSup / $denominador) * 100;
+            $altoInfPct = ($aInf / $denominador) * 100;
+
+            $bloquesActuales = $ventana['bloques'] ?? [];
+            $sobreluzActual = $ventana['sobreluz'] ?? [];
+            $detalleActual = $ventana['detalle'] ?? [];
+        @endphp
+
+        <div class="page-break p-10 bg-white">
+
+            {{-- CABECERA --}}
+            <div class="mb-8 text-center border-b-2 border-blue-100 pb-4">
                 <span class="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                    Documento Técnico - SISTEMA NOVA
+                    Plano Técnico - SISTEMA NOVA
                 </span>
-                <h1 class="text-xl font-black text-gray-800 mt-2 uppercase">
-                    {{ $ventana['nv'] }}
+                <h1 class="text-2xl font-black text-gray-800 mt-2 uppercase">
+                    {{ $ventana['nombre'] ?? $ventana['nv'] }}
                 </h1>
-                <p class="text-xs text-gray-500 mt-1">Medidas: {{ $ventana['ancho'] }} x {{ $ventana['alto'] }} cm</p>
+                <p class="text-sm text-gray-500 mt-1 font-bold uppercase">
+                    {{ $anchoTotal }} cm (Ancho) x {{ $altoTotal }} cm (Alto)
+                </p>
             </div>
 
-            @php
-                $altoT = $ventana['alto'];
-                $aInf = $ventana['altoInf'];
-                $aSup = $ventana['altoSup'];
-                $altoSupPct = $aSup > 0 ? ($aSup / $altoT) * 100 : 0;
-                $altoInfPct = ($aInf / $altoT) * 100;
-            @endphp
-
             {{-- PLANO 2D --}}
-            <div class="relative mx-auto mb-24 mt-10" style="width: 85%; max-width: 700px; height: 350px;">
+            <div class="relative mx-auto mb-24 mt-10" style="width: 85%; max-width: 650px; height: 350px;">
 
-                {{-- COTA LATERAL TOTAL --}}
-                <div class="absolute -left-12 top-0 h-full flex items-center justify-center">
-                    <div class="w-[1.5px] h-full relative bg-slate-400">
+                {{-- COTA LATERAL IZQUIERDA (TOTAL) --}}
+                <div class="absolute -left-14 top-0 h-full flex items-center justify-center">
+                    <div class="w-[2px] h-full relative bg-blue-500">
+                        <div class="absolute -top-1 -left-[4px] text-[8px] text-blue-500">▲</div>
+                        <div class="absolute -bottom-1 -left-[4px] text-[8px] text-blue-500">▼</div>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="-rotate-90 whitespace-nowrap bg-white px-1 text-[11px] font-bold text-gray-500 uppercase">
-                                {{ $altoT }} cm
+                            <div class="-rotate-90 bg-white px-2 text-[12px] font-black text-blue-600 border border-blue-200 rounded">
+                                {{ $altoTotal }} cm
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- COTA LATERAL DERECHA (ALTO PUENTE) --}}
+                <div class="absolute -right-14 bottom-0 flex items-center justify-center" style="height: {{ $altoInfPct }}%;">
+                    <div class="w-[2px] h-full relative bg-orange-500">
+                        <div class="absolute -top-1 -left-[4px] text-[8px] text-orange-500">▲</div>
+                        <div class="absolute -bottom-1 -left-[4px] text-[8px] text-orange-500">▼</div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="rotate-90 bg-white px-2 text-[11px] font-black text-orange-600 border border-orange-200 rounded whitespace-nowrap">
+                                {{ $altoPuente }} cm
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- DIBUJO DEL MARCO --}}
-                <div class="blueprint-border h-full w-full bg-gray-800 flex flex-col overflow-hidden shadow-xl">
-                    {{-- SOBRELÚZ --}}
+                <div class="blueprint-border h-full w-full bg-gray-900 flex flex-col overflow-hidden shadow-2xl">
+
+                    {{-- SECCIÓN SOBRELÚZ --}}
                     @if ($aSup > 0)
-                        <div class="flex w-full border-b-[4px] border-gray-900" style="height: {{ $altoSupPct }}%;">
-                            @foreach ($ventana['sobreluz'] as $parte)
+                        <div class="flex w-full border-b-[6px] border-gray-950" style="height: {{ $altoSupPct }}%;">
+                            @foreach ($sobreluzActual as $parte)
                                 <div class="flex-1 border-r-2 border-gray-900 glass-blue flex flex-col items-center justify-center relative">
-                                    <span class="text-[10px] font-mono font-black text-blue-900">{{ $parte['ancho'] }} × {{ $parte['alto'] }}</span>
+                                    <span class="text-[9px] font-black text-blue-700 absolute top-2 uppercase tracking-tighter">{{ $parte['label'] ?? 'TL' }}</span>
+                                    <span class="text-[11px] font-bold text-gray-800 mt-2">{{ $parte['ancho'] }} x {{ $parte['alto'] }}</span>
                                 </div>
                             @endforeach
                         </div>
                     @endif
 
-                    {{-- CUERPO INFERIOR --}}
+                    {{-- SECCIÓN INFERIOR (HOJAS) --}}
                     <div class="flex w-full" style="height: {{ $altoInfPct }}%;">
-                        @foreach ($ventana['bloques'] as $i => $mod)
-                            <div class="flex-1 border-r-[4px] border-gray-900 relative flex flex-col justify-center items-center {{ $mod['tipo'] === 'C' ? 'glass-dark' : 'glass-blue' }}">
-                                <div class="absolute top-2 left-2 px-1 py-0.5 rounded-sm text-[8px] font-black {{ $mod['tipo'] === 'C' ? 'bg-yellow-400 text-yellow-900' : 'bg-green-600 text-white' }}">
+                        @foreach ($bloquesActuales as $i => $mod)
+                            <div class="flex-1 border-r-[4px] border-gray-950 relative flex flex-col justify-center items-center {{ $mod['tipo'] === 'C' ? 'glass-dark' : 'glass-blue' }}">
+
+                                {{-- INDICADOR DE HOJA --}}
+                                <div class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-black {{ $mod['tipo'] === 'C' ? 'bg-yellow-400 text-yellow-900' : 'bg-green-600 text-white' }}">
                                     {{ $mod['tipo'] }}{{ $i + 1 }}
                                 </div>
-                                <div class="bg-white/40 px-2 py-1 rounded text-center">
-                                    <span class="text-[11px] font-mono font-black text-gray-900">{{ $mod['ancho'] }} × {{ $mod['alto'] }}</span>
+
+                                {{-- TEXTO DEL VIDRIO --}}
+                                <div class="text-center z-10">
+                                    <p class="text-[10px] font-black text-blue-800 uppercase mb-1">Vidrio</p>
+                                    <span class="text-[12px] font-mono font-black text-gray-900">{{ $mod['ancho'] }} x {{ $mod['alto'] }}</span>
                                 </div>
+
+                                {{-- EFECTO DE DESCUENTO (SOLO PARA TIPO 'C') --}}
+                                @if($mod['tipo'] === 'C')
+                                    <div class="absolute bottom-0 left-0 w-full h-[3%] bg-black border-t border-gray-900/50 flex items-center justify-center">
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
                 </div>
+
+                {{-- COTA INFERIOR (ANCHO TOTAL) --}}
+                <div class="absolute -bottom-10 left-0 w-full flex justify-center">
+                    <div class="h-[2px] w-full relative bg-blue-500">
+                        <div class="absolute left-[-2px] top-[-3px] text-[8px] text-blue-500">◀</div>
+                        <div class="absolute right-[-2px] top-[-3px] text-[8px] text-blue-500">▶</div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="bg-white px-4 text-[12px] font-black text-gray-700 border-x border-blue-200">
+                                Ancho: {{ $anchoTotal }} cm
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
             </div>
 
             {{-- TABLA DE MATERIALES --}}
-            <div class="mt-12">
-                <h2 class="text-sm font-black text-blue-800 uppercase tracking-widest mb-3 border-l-4 border-blue-600 pl-2">
-                    Especificaciones de Materiales - {{ $ventana['nv'] }}
+            <div class="mt-4">
+                <h2 class="text-[12px] font-black text-gray-800 uppercase tracking-tighter mb-4 flex items-center gap-2">
+                    <div class="w-3 h-3 bg-blue-600"></div> MAPEO DE COMPONENTES Y PERFILERÍA
                 </h2>
-                <table class="w-full text-[11px] border-collapse">
+                <table class="w-full text-[11px] border-collapse border border-gray-300">
                     <thead>
-                        <tr class="bg-gray-100 text-gray-700">
-                            <th class="border border-gray-300 p-2 text-left uppercase">Descripción</th>
-                            <th class="border border-gray-300 p-2 text-center uppercase">Corte (cm)</th>
-                            <th class="border border-gray-300 p-2 text-center uppercase">Cant.</th>
+                        <tr class="bg-gray-800 text-white">
+                            <th class="border border-gray-600 p-2 text-left uppercase w-[60%]">Descripción del Perfil / Accesorio</th>
+                            <th class="border border-gray-600 p-2 text-center uppercase">Medida Corte</th>
+                            <th class="border border-gray-600 p-2 text-center uppercase">Cantidad</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($ventana['detalle'] as $item)
+                        @foreach ($detalleActual as $item)
                             @php
                                 $codigo = $item['label'];
-                                $nombreEncontrado = 'Perfil No Identificado (' . $codigo . ')';
-                                if (isset($ventana['catalogo'])) {
+                                $nombreEncontrado = 'No identificado (' . $codigo . ')';
+                                if (!empty($ventana['catalogo'])) {
                                     foreach ($ventana['catalogo'] as $linea) {
                                         if (str_contains(strval($linea), strval($codigo))) {
                                             $nombreEncontrado = $linea;
@@ -134,17 +194,23 @@
                                     }
                                 }
                             @endphp
-                            <tr class="odd:bg-white even:bg-gray-50">
-                                <td class="border border-gray-300 p-2 font-bold text-gray-700">{{ $nombreEncontrado }}</td>
-                                <td class="border border-gray-300 p-2 text-center font-mono font-bold text-blue-700">{{ $item['alto'] }}</td>
-                                <td class="border border-gray-300 p-2 text-center font-bold">{{ $item['cantidad'] }}</td>
+                            <tr class="even:bg-gray-50">
+                                <td class="border border-gray-300 p-2 font-bold text-gray-700 uppercase">{{ $nombreEncontrado }}</td>
+                                <td class="border border-gray-300 p-2 text-center font-mono font-black text-blue-700 bg-blue-50/50">{{ $item['alto'] }} cm</td>
+                                <td class="border border-gray-300 p-2 text-center font-black">{{ $item['cantidad'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+
+            {{-- PIE DE PÁGINA --}}
+            <div class="mt-6 text-[9px] text-gray-400 text-right italic">
+                Página {{ $loop->iteration }} - Sistema Nova Pro | {{ now()->format('d/m/Y H:i') }}
+            </div>
         </div>
     @endforeach
 
 </body>
+
 </html>
