@@ -2,10 +2,8 @@
 
 use Livewire\Component;
 
-new class extends Component
-{
+new class extends Component {
     public $sistemaSeleccionado = null;
-
 
     public function mount()
     {
@@ -119,6 +117,56 @@ new class extends Component
         </div>
     @elseif ($sistemaSeleccionado === 'Sistema Nova')
         <livewire:ventanas.sistema-nova />
+    @else
+        <div class="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-12">
+    <div class="relative max-w-2xl w-full bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-10 md:p-16 text-center overflow-hidden">
 
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-amber-100 rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-orange-100 rounded-full blur-3xl opacity-50"></div>
+
+        <div class="relative">
+            <div class="mb-12 inline-block">
+                <div class="relative transform transition-all duration-700 hover:scale-110">
+
+                    <div class="animate-bounce" style="animation-duration: 3s;">
+                        <img src="{{ asset('img/rocket-0d392ed0.webp') }}"
+                             alt="Cohete Filament"
+                             class="w-48 h-48 object-contain drop-shadow-[0_20px_30px_rgba(245,158,11,0.4)] mx-auto rotate-[15deg]" />
+
+
+                    </div>
+
+                    <div class="w-24 h-2 bg-slate-900/5 rounded-[100%] mx-auto mt-2 blur-md animate-pulse"></div>
+                </div>
+            </div>
+
+            <h1 class="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tighter">
+                Estamos <span class="text-amber-500">trabajando</span>
+            </h1>
+
+            <p class="text-slate-500 text-lg font-medium mb-10 max-w-sm mx-auto">
+                Nuestra plataforma de <span class="text-slate-800 font-bold">MediPro</span> está a punto de despegar.
+            </p>
+
+            <div class="flex justify-center">
+                <div class="group relative inline-flex items-center space-x-3 px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl transition-all hover:bg-slate-800 active:scale-95 cursor-pointer">
+                    <span class="flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                    </span>
+                    <span class="tracking-widest uppercase text-sm">Próximamente</span>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t border-slate-100 flex items-center justify-between text-slate-400">
+                <span class="text-[10px] font-bold tracking-[0.2em] uppercase">v2.0 Stable</span>
+                <p class="text-[10px] tracking-[0.2em] uppercase text-gray-400">
+                by <a href="https://www.facebook.com/share/1Eh3Dx3iKB/" target="_blank" rel="noopener noreferrer">
+                    <span class="font-bold text-blue-600">Jhon Rosales</span></a>
+            </p>
+            </div>
+        </div>
+    </div>
+</div>
     @endif
 </div>

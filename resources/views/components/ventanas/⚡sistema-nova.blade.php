@@ -358,8 +358,6 @@ new class extends Component {
 
     public function cambiarVentana($index)
     {
-        // 1. Guardamos TODO lo de la ventana actual antes de movernos
-        // Usamos copias profundas para que los arreglos no se compartan entre índices
         $this->ventanas[$this->ventanaActiva] = [
             'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
             'ancho' => $this->ancho,
@@ -456,7 +454,8 @@ new class extends Component {
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Ancho <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.blur="ancho" oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.
+            ="ancho" oninput="if(this.value < 0) this.value = 1;"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">

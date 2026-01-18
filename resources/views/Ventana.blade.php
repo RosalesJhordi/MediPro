@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediPro - Puerta</title>
+    <title>MediPro - Ventana</title>
     <script src="https://kit.fontawesome.com/a22afade38.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     @vite('resources/css/app.css')
@@ -47,6 +47,11 @@
         <i class="fa-solid fa-house text-lg"></i>
     </a>
     <livewire:ventanas.app />
+
+    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-2 tracking-[0.2em] uppercase text-gray-400">
+        by <a href="https://www.facebook.com/share/1Eh3Dx3iKB/" target="_blank" rel="noopener noreferrer">
+            <span class="font-bold text-blue-600">Jhon Rosales</span></a>
+    </p>
 </body>
 
 </html>
