@@ -13,67 +13,30 @@ new class extends Component {
     public $ordenBloques = [];
     public $planoExportHtml;
 
-    // public function imprimirTodo()
-    // {
-    //     // 1. Sincronizar la ventana que el usuario está viendo actualmente antes de procesar
-    //     $this->ventanas[$this->ventanaActiva] = [
-    //         'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
-    //         'ancho' => $this->ancho,
-    //         'alto' => $this->alto,
-    //         'altoPuente' => $this->altoPuente,
-    //         'numCorredizas' => $this->numCorredizas,
-    //         'numFijos' => $this->numFijos,
-    //     ];
+    //descuentos
 
-    //     $originalIndex = $this->ventanaActiva;
-    //     $reporteTotal = [];
-
-    //     foreach ($this->ventanas as $index => $v) {
-    //         // 2. Cambiamos el estado del objeto a la ventana actual del bucle
-    //         $this->ancho = $v['ancho'];
-    //         $this->alto = $v['alto'];
-    //         $this->altoPuente = $v['altoPuente'];
-    //         $this->numCorredizas = $v['numCorredizas'];
-    //         $this->numFijos = $v['numFijos'];
-
-    //         // Forzamos a que las propiedades calculadas se refresquen
-    //         // llamando directamente a los métodos internos
-    //         $reporteTotal[] = [
-    //             'nv' => $v['nombre'],
-    //             'ancho' => $this->ancho,
-    //             'alto' => $this->alto,
-    //             'altoInf' => $this->getAltoInfProperty(),
-    //             'altoSup' => $this->getAltoSupProperty(),
-    //             'bloques' => $this->getMedidasBloquesProperty(),
-    //             'sobreluz' => $this->getSobreluzPartesProperty(),
-    //             'detalle' => $this->getDetalleModulosProperty(),
-    //             'catalogo' => $this->data,
-    //         ];
-    //     }
-
-    //     // 3. Restauramos la vista del usuario a como estaba
-    //     $this->cambiarVentana($originalIndex);
-
-    //     // 4. Guardar y disparar
-    //     session()->put('datos_lote', $reporteTotal);
-    //     session()->save();
-
-    //     $this->dispatch('disparar-impresion-total');
-    //     $this->resetearProyecto();
-    // }
+    public $vidrio = 0.6;
+    public $pffijo = 0.3;
+    public $pfcorrediza = 2;
+    public $sobreluz = 2.1;
+    public $sbancho = 0.3;
+    public $vfijo = 1;
+    public $vcorrediza = 2.5;
 
     public function imprimirTodo()
     {
+        $datos = session('datos_lote', []);
+        dd($datos);
         // Sincronizar la ventana que el usuario tiene abierta actualmente
         $this->cambiarVentana($this->ventanaActiva);
 
-        // Verificamos que no haya datos vacíos por error
-        $datosLimpios = array_map(function ($v) {
-            return $v;
-        }, $this->ventanas);
+        // // Verificamos que no haya datos vacíos por error
+        // $datosLimpios = array_map(function ($v) {
+        //     return $v;
+        // }, $this->ventanas);
 
-        session()->put('datos_lote', $datosLimpios);
-        session()->save();
+        // session()->put('datos_lote', $datosLimpios);
+        // session()->save();
 
         $this->dispatch('disparar-impresion-total');
         $this->resetearProyecto();
@@ -162,7 +125,7 @@ new class extends Component {
 
     public function getAltoSupProperty()
     {
-        return (float) max(0, $this->safeFloat($this->alto, 165) - $this->safeFloat($this->altoPuente) - 2.1);
+        return (float) max(0, $this->safeFloat($this->alto, 165) - $this->safeFloat($this->altoPuente) - $this->sobreluz);
     }
 
     public function getBloquesProperty()
@@ -206,7 +169,7 @@ new class extends Component {
 
         for ($i = 1; $i <= $cantidad; $i++) {
             $partes[] = [
-                'ancho' => $this->safeFloat($this->truncar($anchoPorParte, 1)) - 0.3,
+                'ancho' => $this->safeFloat($this->truncar($anchoPorParte, 1)) - $this->sbancho,
                 'alto' => $this->truncar($altoS, 1),
                 'label' => $cantidad > 1 ? "TL $i" : 'TL',
             ];
@@ -237,13 +200,13 @@ new class extends Component {
         $anchoPorParte = $this->safeDiv($anchoTotal, $totalHojas);
 
         foreach ($this->bloques as $tipo) {
-            $ajuste = $tipo === 'Fijo' ? 0.6 : -0.6;
+            $ajuste = $tipo === 'Fijo' ? $this->vidrio : -$this->vidrio;
             $anchoFinal = $anchoPorParte + $ajuste;
 
             $bloques[] = [
                 'tipo' => $tipo === 'Fijo' ? 'F' : 'C',
                 'ancho' => $this->truncar($anchoFinal, 1),
-                'alto' => $this->truncar($this->altoPuente - ($tipo === 'Fijo' ? 1 : 2.5)),
+                'alto' => $this->truncar($this->altoPuente - ($tipo === 'Fijo' ? $this->vfijo : $this->vcorrediza), 1),
             ];
         }
 
@@ -325,8 +288,8 @@ new class extends Component {
             }
         }
 
-        $detalle['PF Fijo'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - 0.3), 'cantidad' => $pfFijos];
-        $detalle['PF Corrediza'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - 2), 'cantidad' => (int) $this->numCorredizas * 2];
+        $detalle['PF Fijo'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - $this->pffijo), 'cantidad' => $pfFijos];
+        $detalle['PF Corrediza'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - $this->pfcorrediza), 'cantidad' => (int) $this->numCorredizas * 2];
 
         return $detalle;
     }
@@ -352,8 +315,26 @@ new class extends Component {
     {
         $this->cambiarVentana($this->ventanaActiva); // Sincroniza actual
         $nuevoId = count($this->ventanas) + 1;
-        $this->ventanas[] = ['nombre' => "V - $nuevoId", 'ancho' => 205, 'alto' => 165, 'altoPuente' => 130, 'numCorredizas' => 1, 'numFijos' => 2];
+        $this->ventanas[] = [
+            'nombre' => "V - $nuevoId",
+            'ancho' => 205,
+            'alto' => 165,
+            'altoPuente' => 130,
+            'numCorredizas' => 1,
+            'numFijos' => 2
+        ];
+        
         $this->cambiarVentana(count($this->ventanas) - 1);
+
+        // Verificamos que no haya datos vacíos por error
+        $datosLimpios = array_map(function ($v) {
+            return $v;
+        }, $this->ventanas);
+
+        session()->put('datos_lote', $datosLimpios);
+        session()->save();
+        // $datos = session('datos_lote', []);
+        // dd($datos);
     }
 
     public function cambiarVentana($index)
@@ -387,32 +368,6 @@ new class extends Component {
         $this->numFijos = $v['numFijos'];
     }
 
-    private function guardarVentanaActual()
-    {
-        if (!isset($this->ventanas[$this->ventanaActiva])) {
-            return;
-        }
-
-        $this->ventanas[$this->ventanaActiva] = [
-            'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
-            'ancho' => $this->ancho,
-            'alto' => $this->alto,
-            'altoPuente' => $this->altoPuente,
-            'numCorredizas' => $this->numCorredizas,
-            'numFijos' => $this->numFijos,
-        ];
-    }
-
-    private function cargarVentana($index)
-    {
-        $v = $this->ventanas[$index];
-
-        $this->ancho = $v['ancho'];
-        $this->alto = $v['alto'];
-        $this->altoPuente = $v['altoPuente'];
-        $this->numCorredizas = $v['numCorredizas'];
-        $this->numFijos = $v['numFijos'];
-    }
 };
 ?>
 

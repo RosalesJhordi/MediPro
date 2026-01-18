@@ -2,21 +2,20 @@
 
 use Livewire\Component;
 
-new class extends Component
-{
+new class extends Component {
     public int $material = 7852;
     public float $anchoTotal = 90;
-    public float $altoTotal  = 220;
+    public float $altoTotal = 220;
     public string $color = 'negro';
     public string $vista = '2d';
 
-    public float $tubo      = 2.5;
-    public float $canal     = 2.2;
-    public float $cuadrado  = 3.8;
-    public float $paflon    = 8.2;
+    public float $tubo = 2.5;
+    public float $canal = 2.2;
+    public float $cuadrado = 3.8;
+    public float $paflon = 8.2;
     public float $luzArriba = 0.5;
-    public float $luzAbajo  = 1;
-    public float $luzLados  = 0.6;
+    public float $luzAbajo = 1;
+    public float $luzLados = 0.6;
 
     public array $datos = [];
 
@@ -71,13 +70,13 @@ new class extends Component
     {
         $this->dispatch('redibujar-puerta', [
             'ancho' => $this->anchoTotal,
-            'alto'  => $this->altoTotal,
+            'alto' => $this->altoTotal,
         ]);
 
         match ($this->material) {
             7830 => $this->calcularMaterial('canal', 7830),
             7852 => $this->calcularMaterial('tubo', 7852),
-            default => $this->datos = [],
+            default => ($this->datos = []),
         };
     }
     public $dimensionPlancha = '183x244';
@@ -86,56 +85,54 @@ new class extends Component
         $perfil = $tipo === 'canal' ? $this->canal : $this->tubo;
 
         /* ===== Tubos ===== */
-        $tuboLados  = $this->altoTotal;
-        $tuboArriba = $this->anchoTotal - ($perfil * 2);
+        $tuboLados = $this->altoTotal;
+        $tuboArriba = $this->anchoTotal - $perfil * 2;
 
         /* ===== Cuadrados ===== */
-        $cuadradoAA = $this->anchoTotal - ($perfil * 2);
-        $lados      = $cuadradoAA - $this->luzLados - ($this->cuadrado * 2);
+        $cuadradoAA = $this->anchoTotal - $perfil * 2;
+        $lados = $cuadradoAA - $this->luzLados - $this->cuadrado * 2;
 
         $cuadradoLA = $this->altoTotal - $this->luzAbajo - $this->luzArriba;
-        $arribas    = $cuadradoLA - $perfil;
+        $arribas = $cuadradoLA - $perfil;
 
         /* ===== Paflón ===== */
-        $paflon = $cuadradoAA - ($this->cuadrado * 2) - $this->luzLados;
+        $paflon = $cuadradoAA - $this->cuadrado * 2 - $this->luzLados;
 
         /* ===== Vidrios ===== */
-        $vidrioAlto  = ($arribas - ($this->cuadrado * 2) - $this->paflon) / 2;
-        $vidrioAncho = $cuadradoAA - ($this->cuadrado * 2) - $this->luzLados;
+        $vidrioAlto = ($arribas - $this->cuadrado * 2 - $this->paflon) / 2;
+        $vidrioAncho = $cuadradoAA - $this->cuadrado * 2 - $this->luzLados;
 
         $this->datos = [
             "{$codigo} - Lados" => [
-                'medida'   => $tuboLados,
+                'medida' => $tuboLados,
                 'cantidad' => 2,
             ],
             "{$codigo} - Arriba" => [
-                'medida'   => $tuboArriba,
+                'medida' => $tuboArriba,
                 'cantidad' => 1,
             ],
             '5414 - Arriba y Abajo' => [
-                'medida'   => $lados,
+                'medida' => $lados,
                 'cantidad' => 2,
             ],
             '5414 - Lados' => [
-                'medida'   => $arribas,
+                'medida' => $arribas,
                 'cantidad' => 2,
             ],
             '5227 - Medio' => [
-                'medida'   => $paflon,
+                'medida' => $paflon,
                 'cantidad' => 1,
             ],
             'Vidrios' => [
-                'medida'   =>
-                number_format($vidrioAlto - 0.5, 2) . ' x ' .
-                    number_format($vidrioAncho - 0.5, 2),
+                'medida' => number_format($vidrioAlto - 0.5, 2) . ' x ' . number_format($vidrioAncho - 0.5, 2),
                 'cantidad' => 2,
             ],
             'Bisagras' => [
-                'medida'   => '3x3',
+                'medida' => '3x3',
                 'cantidad' => 3,
             ],
             'Chapas' => [
-                'medida'   => 'Unidad',
+                'medida' => 'Unidad',
                 'cantidad' => 1,
             ],
         ];
@@ -147,20 +144,6 @@ new class extends Component
     <!-- Título -->
     <h1 class="text-3xl font-extrabold mb-6 flex items-center justify-center gap-3 text-blue-800">
         Puerta
-        {{-- <button
-            class="relative group p-2 rounded-full bg-gray-800 text-orange-400
-             hover:bg-gray-700 hover:text-white transition duration-300
-             shadow-lg border border-gray-600"
-            onclick="document.getElementById('modalPuerta').showModal()">
-            <i class="fa-solid fa-arrows-rotate text-lg"></i>
-            <span
-                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-               text-xs text-white bg-gray-900 px-2 py-1 rounded-md
-               opacity-0 group-hover:opacity-100 transition duration-200
-               whitespace-nowrap pointer-events-none shadow-md">
-                Cambiar modelo
-            </span>
-        </button> --}}
     </h1>
 
 
@@ -193,212 +176,202 @@ new class extends Component
             </select>
         </div>
 
-        <!-- VISTA -->
-        <div class="flex w-full  flex-col">
-            <label class="block text-sm font-semibold text-gray-600">Vista</label>
-            <select wire:model.live="vista" class="w-full p-2 rounded-xl input-bordered bg-white text-gray-800">
-                <option value="2d">2D</option>
-                <option value="3d">3D</option>
-            </select>
-        </div>
     </div>
 
-    @if ($vista === '2d')
-        <div class="block  lg:flex justify-center gap-2 items-center">
-            <div
-                class="flex w-1/2 flex-col items-center justify-center bg-gray-50 p-6 md:p-10 rounded-2xl border border-gray-200 shadow-inner">
 
-                <div class="mb-8 text-center">
-                    <span
-                        class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-widest">
-                        Plano Técnico: Serie {{ $material }}
-                    </span>
-                </div>
+    <div class="block  lg:flex justify-center gap-2 items-center">
+        <div
+            class="flex w-1/2 flex-col items-center justify-center bg-gray-50 p-6 md:p-10 rounded-2xl border border-gray-200 shadow-inner">
 
-                <div class="relative" style="width: 260px; height: 520px;">
-
-                    <div class="absolute -left-12 top-0 h-full flex items-center justify-center">
-                        <div class="w-[1.5px] h-full relative bg-slate-400">
-                            <span class="absolute -top-1 -left-[4px] text-[12px] text-slate-400">▲</span>
-                            <span class="absolute -bottom-1 -left-[4px] text-[12px] text-slate-400">▼</span>
-
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <div
-                                    class="-rotate-45 whitespace-nowrap bg-white px-1 text-[15px] font-bold text-gray-500 uppercase tracking-tighter">
-                                    {{ $altoTotal }} cm
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="absolute -bottom-10 left-0 w-full flex justify-center">
-                        <div class="h-[1.5px] w-full relative bg-slate-400">
-                            <span class="absolute -left-1 -top-[5.5px] text-[10px] text-slate-400">◀</span>
-                            <span class="absolute -right-1 -top-[5.5px] text-[10px] text-slate-400">▶</span>
-
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <div
-                                    class="bg-white px-2 text-[15px] font-bold text-gray-500 uppercase tracking-tighter">
-                                    {{ $anchoTotal }} cm
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full h-full border-[8px] shadow-xl relative flex flex-col justify-between p-1"
-                        style="border-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}; background-color: #e5e7eb;">
-
-                        <div class="w-full bg-sky-200/50 border border-sky-300 flex flex-col items-center justify-center relative overflow-hidden"
-                            style="height: 44%;">
-                            <div class="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none"
-                                style="background: linear-gradient(135deg, transparent 45%, white 50%, transparent 55%); background-size: 200% 200%;">
-                            </div>
-
-                            <span class="text-[9px] font-black text-sky-700 uppercase">Vidrio 1</span>
-                            <span class="text-[10px] font-mono font-bold text-sky-900">
-                                @if (isset($datos['Vidrios']))
-                                    {{ explode('x', $datos['Vidrios']['medida'])[1] }} x
-                                    {{ explode('x', $datos['Vidrios']['medida'])[0] }}
-                                @endif
-                            </span>
-                        </div>
-
-                        <div class="w-full flex items-center justify-between px-3 shadow-sm relative"
-                            style="height: 40px; background-color: {{ $color === 'negro' ? '#333' : '#666' }};">
-
-                            <div
-                                class="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center bg-gray-400/20">
-                                <div class="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-sm"></div>
-                            </div>
-
-                            <span class="text-[10px] text-white/50 font-mono tracking-tighter">REF: 5227</span>
-
-                            <div class="text-[10px] text-white font-bold">
-                                {{ $anchoTotal - ($material == 7852 ? $tubo * 2 : $canal * 2) - 0.6 - 3.8 * 2 }} cm
-                            </div>
-                        </div>
-
-                        <div class="w-full bg-sky-200/50 border border-sky-300 flex flex-col items-center justify-center relative"
-                            style="height: 44%;">
-                            <span class="text-[9px] font-black text-sky-700 uppercase">Vidrio 2</span>
-                            <span class="text-[10px] font-mono font-bold text-sky-900">
-                                @if (isset($datos['Vidrios']))
-                                    {{ explode('x', $datos['Vidrios']['medida'])[1] }} x
-                                    {{ explode('x', $datos['Vidrios']['medida'])[0] }}
-                                @endif
-                            </span>
-                        </div>
-
-                        <div class="absolute right-[-4px] top-0 h-full flex flex-col justify-around py-12">
-                            <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
-                            <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
-                            <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-16 grid grid-cols-2 gap-x-6 gap-y-2">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-sky-200 border border-sky-400"></div>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase">Vidrio</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 border border-gray-400"
-                            style="background-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}"></div>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase">Aluminio
-                            {{ ucfirst($color) }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-gray-200 border border-gray-400"></div>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase">3x3 Bisagras</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-yellow-200 border border-yellow-400"></div>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase">Chapa</span>
-                    </div>
-                </div>
+            <div class="mb-8 text-center">
+                <span
+                    class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-widest">
+                    Plano Técnico: Serie {{ $material }}
+                </span>
             </div>
 
-            <div class="flex flex-col md:flex-row items-start justify-center w-1/2">
-                <div class="mt-6 w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="relative" style="width: 260px; height: 520px;">
 
-                    <div class="bg-gray-50/50 border-b border-gray-200 px-5 py-4 flex items-center justify-between">
-                        <h3 class="text-slate-800 font-bold text-sm md:text-base flex items-center gap-2">
-                            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600">
-                                <i class="fa-solid fa-toolbox"></i>
-                            </span>
-                            Accesorios
-                        </h3>
-                        <span
-                            class="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded-md uppercase tracking-wider">
-                            Desglose Técnico
+                <div class="absolute -left-12 top-0 h-full flex items-center justify-center">
+                    <div class="w-[1.5px] h-full relative bg-slate-400">
+                        <span class="absolute -top-1 -left-[4px] text-[12px] text-slate-400">▲</span>
+                        <span class="absolute -bottom-1 -left-[4px] text-[12px] text-slate-400">▼</span>
+
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div
+                                class="-rotate-45 whitespace-nowrap bg-white px-1 text-[15px] font-bold text-gray-500 uppercase tracking-tighter">
+                                {{ $altoTotal }} cm
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute -bottom-10 left-0 w-full flex justify-center">
+                    <div class="h-[1.5px] w-full relative bg-slate-400">
+                        <span class="absolute -left-1 -top-[5.5px] text-[10px] text-slate-400">◀</span>
+                        <span class="absolute -right-1 -top-[5.5px] text-[10px] text-slate-400">▶</span>
+
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="bg-white px-2 text-[15px] font-bold text-gray-500 uppercase tracking-tighter">
+                                {{ $anchoTotal }} cm
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full h-full border-[8px] shadow-xl relative flex flex-col justify-between p-1"
+                    style="border-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}; background-color: #e5e7eb;">
+
+                    <div class="w-full bg-sky-200/50 border border-sky-300 flex flex-col items-center justify-center relative overflow-hidden"
+                        style="height: 44%;">
+                        <div class="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none"
+                            style="background: linear-gradient(135deg, transparent 45%, white 50%, transparent 55%); background-size: 200% 200%;">
+                        </div>
+
+                        <span class="text-[9px] font-black text-sky-700 uppercase">Vidrio 1</span>
+                        <span class="text-[10px] font-mono font-bold text-sky-900">
+                            @if (isset($datos['Vidrios']))
+                                {{ explode('x', $datos['Vidrios']['medida'])[1] }} x
+                                {{ explode('x', $datos['Vidrios']['medida'])[0] }}
+                            @endif
                         </span>
                     </div>
 
-                    <div class="p-0 overflow-x-auto">
-                        <table class="w-full text-sm text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                                    <th class="px-6 py-3 border-b border-gray-200">Accesorio / Perfiles</th>
-                                    <th class="px-6 py-3 text-center border-b border-gray-200">Medida</th>
-                                    <th class="px-6 py-3 text-right border-b border-gray-200">Cantidad</th>
-                                </tr>
-                            </thead>
+                    <div class="w-full flex items-center justify-between px-3 shadow-sm relative"
+                        style="height: 40px; background-color: {{ $color === 'negro' ? '#333' : '#666' }};">
 
-                            <tbody class="divide-y divide-gray-100">
-                                @forelse($datos as $nombre => $item)
-                                    <tr class="hover:bg-blue-50/30 transition-colors group">
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col">
-                                                <span class="font-semibold text-slate-700 capitalize">
-                                                    {{ str_replace('_', ' ', $nombre) }}
-                                                </span>
-                                                <span class="text-[10px] text-slate-400 font-medium italic">Referencia
-                                                    estándar</span>
-                                            </div>
-                                        </td>
+                        <div
+                            class="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center bg-gray-400/20">
+                            <div class="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-sm"></div>
+                        </div>
 
-                                        <td class="px-6 py-4 text-center">
-                                            <span
-                                                class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200">
-                                                {{ $item['medida'] }} cm
-                                            </span>
-                                        </td>
+                        <span class="text-[10px] text-white/50 font-mono tracking-tighter">REF: 5227</span>
 
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <span class="text-slate-900 font-black text-base">
-                                                    {{ $item['cantidad'] }}
-                                                </span>
-                                                <span
-                                                    class="text-[10px] text-slate-400 font-bold uppercase">unid.</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="px-6 py-12 text-center">
-                                            <div class="flex flex-col items-center justify-center gap-2">
-                                                <i class="fa-solid fa-folder-open text-gray-300 text-3xl"></i>
-                                                <p class="text-gray-400 italic text-sm font-medium">No hay datos
-                                                    calculados actualmente</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                        <div class="text-[10px] text-white font-bold">
+                            {{ $anchoTotal - ($material == 7852 ? $tubo * 2 : $canal * 2) - 0.6 - 3.8 * 2 }} cm
+                        </div>
                     </div>
 
-                    <div class="bg-slate-50 border-t border-gray-100 px-6 py-3">
-                        <p class="text-[10px] text-slate-400 font-medium">
-                            * Las medidas mostradas son aproximadas para el corte del material.
-                        </p>
+                    <div class="w-full bg-sky-200/50 border border-sky-300 flex flex-col items-center justify-center relative"
+                        style="height: 44%;">
+                        <span class="text-[9px] font-black text-sky-700 uppercase">Vidrio 2</span>
+                        <span class="text-[10px] font-mono font-bold text-sky-900">
+                            @if (isset($datos['Vidrios']))
+                                {{ explode('x', $datos['Vidrios']['medida'])[1] }} x
+                                {{ explode('x', $datos['Vidrios']['medida'])[0] }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="absolute right-[-4px] top-0 h-full flex flex-col justify-around py-12">
+                        <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
+                        <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
+                        <div class="w-2 h-6 bg-gray-400 rounded-sm border border-black/20"></div>
                     </div>
                 </div>
             </div>
+
+            <div class="mt-16 grid grid-cols-2 gap-x-6 gap-y-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-sky-200 border border-sky-400"></div>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Vidrio</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 border border-gray-400"
+                        style="background-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}"></div>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Aluminio
+                        {{ ucfirst($color) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-gray-200 border border-gray-400"></div>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">3x3 Bisagras</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-yellow-200 border border-yellow-400"></div>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Chapa</span>
+                </div>
+            </div>
         </div>
-    @endif
+
+        <div class="flex flex-col md:flex-row items-start justify-center w-1/2">
+            <div class="mt-6 w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+                <div class="bg-gray-50/50 border-b border-gray-200 px-5 py-4 flex items-center justify-between">
+                    <h3 class="text-slate-800 font-bold text-sm md:text-base flex items-center gap-2">
+                        <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600">
+                            <i class="fa-solid fa-toolbox"></i>
+                        </span>
+                        Accesorios
+                    </h3>
+                    <span
+                        class="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded-md uppercase tracking-wider">
+                        Desglose Técnico
+                    </span>
+                </div>
+
+                <div class="p-0 overflow-x-auto">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                                <th class="px-6 py-3 border-b border-gray-200">Accesorio / Perfiles</th>
+                                <th class="px-6 py-3 text-center border-b border-gray-200">Medida</th>
+                                <th class="px-6 py-3 text-right border-b border-gray-200">Cantidad</th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse($datos as $nombre => $item)
+                                <tr class="hover:bg-blue-50/30 transition-colors group">
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold text-slate-700 capitalize">
+                                                {{ str_replace('_', ' ', $nombre) }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 font-medium italic">Referencia
+                                                estándar</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4 text-center">
+                                        <span
+                                            class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200">
+                                            {{ $item['medida'] }} cm
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span class="text-slate-900 font-black text-base">
+                                                {{ $item['cantidad'] }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 font-bold uppercase">unid.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center gap-2">
+                                            <i class="fa-solid fa-folder-open text-gray-300 text-3xl"></i>
+                                            <p class="text-gray-400 italic text-sm font-medium">No hay datos
+                                                calculados actualmente</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-slate-50 border-t border-gray-100 px-6 py-3">
+                    <p class="text-[10px] text-slate-400 font-medium">
+                        * Las medidas mostradas son aproximadas para el corte del material.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <style>
         body {
@@ -451,100 +424,6 @@ new class extends Component
         }
     </style>
 
-    @if ($vista === '3d')
-        <div class="block lg:flex justify-center gap-2 items-center">
-            @if ($material == '7852')
-                <model-viewer class="w-full lg:w-[50%]"
-                    src="{{ $color === 'gris' ? '/modelos/puerta-gris.glb' : '/modelos/puerta-negro.glb' }}"
-                    camera-controls auto-rotate camera-orbit="0deg 75deg" shadow-intensity="3" exposure="3">
-                </model-viewer>
-            @elseif ($material = '7830')
-                <model-viewer class="w-full lg:w-[50%]"
-                    src="{{ $color === 'gris' ? '/modelos/puerta-gris.glb' : '/modelos/puerta-negro.glb' }}"
-                    camera-controls auto-rotate camera-orbit="0deg 75deg" shadow-intensity="3" exposure="3">
-                </model-viewer>
-            @endif
-            <div class="flex flex-col md:flex-row items-start justify-center w-1/2">
-                <div class="mt-6 w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-                    <div class="bg-gray-50/50 border-b border-gray-200 px-5 py-4 flex items-center justify-between">
-                        <h3 class="text-slate-800 font-bold text-sm md:text-base flex items-center gap-2">
-                            <span
-                                class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600">
-                                <i class="fa-solid fa-toolbox"></i>
-                            </span>
-                            Accesorios
-                        </h3>
-                        <span
-                            class="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded-md uppercase tracking-wider">
-                            Desglose Técnico
-                        </span>
-                    </div>
-
-                    <div class="p-0 overflow-x-auto">
-                        <table class="w-full text-sm text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                                    <th class="px-6 py-3 border-b border-gray-200">Accesorio / Perfiles</th>
-                                    <th class="px-6 py-3 text-center border-b border-gray-200">Medida</th>
-                                    <th class="px-6 py-3 text-right border-b border-gray-200">Cantidad</th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="divide-y divide-gray-100">
-                                @forelse($datos as $nombre => $item)
-                                    <tr class="hover:bg-blue-50/30 transition-colors group">
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col">
-                                                <span class="font-semibold text-slate-700 capitalize">
-                                                    {{ str_replace('_', ' ', $nombre) }}
-                                                </span>
-                                                <span class="text-[10px] text-slate-400 font-medium italic">Referencia
-                                                    estándar</span>
-                                            </div>
-                                        </td>
-
-                                        <td class="px-6 py-4 text-center">
-                                            <span
-                                                class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200">
-                                                {{ $item['medida'] }} cm
-                                            </span>
-                                        </td>
-
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <span class="text-slate-900 font-black text-base">
-                                                    {{ $item['cantidad'] }}
-                                                </span>
-                                                <span
-                                                    class="text-[10px] text-slate-400 font-bold uppercase">unid.</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="px-6 py-12 text-center">
-                                            <div class="flex flex-col items-center justify-center gap-2">
-                                                <i class="fa-solid fa-folder-open text-gray-300 text-3xl"></i>
-                                                <p class="text-gray-400 italic text-sm font-medium">No hay datos
-                                                    calculados actualmente</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="bg-slate-50 border-t border-gray-100 px-6 py-3">
-                        <p class="text-[10px] text-slate-400 font-medium">
-                            * Las medidas mostradas son aproximadas para el corte del material.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     <div class="bg-slate-50 mt-3 p-4 md:p-8 rounded-3xl border border-slate-200 shadow-inner" x-data="{ vista: 'perfiles' }">
 
