@@ -16,5 +16,6 @@ Route::get('Puerta', function (){
 
 Route::get('/plano-imprimir', function () {
     $datos = session('datos_lote', []);
+    // dd($datos);
     return view('planos2d', compact('datos'));
 })->name('plano.imprimir');

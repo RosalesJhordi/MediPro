@@ -4,385 +4,581 @@ use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
 
 new class extends Component {
-    public $ancho = 205;
-    public $alto = 165;
-    public $altoPuente = 130;
-    public $numCorredizas = 1;
-    public $numFijos = 2;
-    public $sistemaSelet;
-    public $ordenBloques = [];
-    public $planoExportHtml;
+    /* ===============================
+     |  ESTADO BASE (EDITABLE)
+     =============================== */
+    public float $ancho = 205;
+    public float $alto = 165;
+    public float $altoPuente = 130;
+    public int $numCorredizas = 1;
+    public int $numFijos = 2;
 
-    //descuentos
+    /* ===============================
+     |  VENTANASpublic array $ventanas = [];
+    public int $ventanaActiva = 0;
+     =============================== */
+    public array $ventanas = [];
+    public int $ventanaActiva = 0;
 
-    public $vidrio = 0.6;
-    public $pffijo = 0.3;
-    public $pfcorrediza = 2;
-    public $sobreluz = 2.1;
-    public $sbancho = 0.3;
-    public $vfijo = 1;
-    public $vcorrediza = 2.5;
+    /* ===============================
+     |  OTROS ESTADOS
+     =============================== */
+    public ?string $sistemaSelet = null;
+    public array $ordenBloques = [];
+    public array $data = [];
+    public $planoExportHtml = null;
 
-    public function imprimirTodo()
-    {
-        $datos = session('datos_lote', []);
-        dd($datos);
-        // Sincronizar la ventana que el usuario tiene abierta actualmente
-        $this->cambiarVentana($this->ventanaActiva);
+    /* ===============================
+     |  AJUSTES INTERNOS
+     =============================== */
+    protected float $vidrio = 0.6;
+    protected float $pffijo = 0.3;
+    protected float $pfcorrediza = 2.0;
+    protected float $sobreluz = 2.1;
+    protected float $sbancho = 0.3;
+    protected float $vfijo = 1.0;
+    protected float $vcorrediza = 2.5;
 
-        // // Verificamos que no haya datos vacíos por error
-        // $datosLimpios = array_map(function ($v) {
-        //     return $v;
-        // }, $this->ventanas);
-
-        // session()->put('datos_lote', $datosLimpios);
-        // session()->save();
-
-        $this->dispatch('disparar-impresion-total');
-        $this->resetearProyecto();
-    }
-    public $data = [];
-    public function procesarPerfiles()
-    {
-        $rutaArchivo = public_path('datos.xlsx');
-
-        if (!file_exists($rutaArchivo)) {
-            $this->data = [];
-            return;
-        }
-
-        try {
-            // Leemos el Excel
-            $datosExcel = Excel::toArray([], $rutaArchivo)[0];
-            $catalogo = [];
-
-            foreach ($datosExcel as $fila) {
-                // Suponiendo que el nombre completo está en la primera columna
-                $nombre = isset($fila[0]) ? trim($fila[0]) : null;
-                if (!empty($nombre)) {
-                    $catalogo[] = $nombre;
-                }
-            }
-            $this->data = $catalogo;
-        } catch (\Exception $e) {
-            $this->data = [];
-        }
-    }
-
-    private function safeFloat($valor, $default = 0.0)
-    {
-        if ($valor === '' || $valor === null || (float) $valor <= 0) {
-            return (float) $default;
-        }
-        return is_numeric($valor) ? (float) $valor : (float) $default;
-    }
-
-    private function safeDiv($numerador, $denominador, $default = 0.0)
-    {
-        $num = $this->safeFloat($numerador);
-        $den = $this->safeFloat($denominador);
-        return $den == 0.0 ? $default : $num / $den;
-    }
-
-    private function truncar($valor, $decimales = 1)
-    {
-        $factor = pow(10, (int) $decimales);
-        $resultado = floor($this->safeFloat($valor) * $factor) / $factor;
-        return number_format($resultado, $decimales, '.', '');
-    }
-
-    public function getDivisionesInferioresProperty()
-    {
-        return (int) $this->safeFloat($this->numCorredizas) + (int) $this->safeFloat($this->numFijos);
-    }
-
-    public function getAnchoAjustadoProperty()
-    {
-        $ancho = $this->safeFloat($this->ancho, 205);
-        $divisiones = (int) $this->divisionesInferiores;
-
-        switch ($divisiones) {
-            case 3:
-                $ancho += 1;
-                break;
-            case 4:
-                $ancho += 0;
-                break;
-            case 5:
-                $ancho += 2;
-                break;
-            case 6:
-                $ancho += 3;
-                break;
-        }
-        return $ancho;
-    }
-
-    public function getAltoInfProperty()
-    {
-        return $this->safeFloat($this->altoPuente, 130);
-    }
-
-    public function getAltoSupProperty()
-    {
-        return (float) max(0, $this->safeFloat($this->alto, 165) - $this->safeFloat($this->altoPuente) - $this->sobreluz);
-    }
-
-    public function getBloquesProperty()
-    {
-        $total = (int) $this->divisionesInferiores;
-        if ($total === 0) {
-            return [];
-        }
-        if ($total === 5) {
-            return ['Fijo', 'Corrediza', 'Fijo', 'Corrediza', 'Fijo'];
-        }
-        if ($total === 6) {
-            return ['Fijo', 'Corrediza', 'Fijo', 'Corrediza', 'Fijo', 'Corrediza'];
-        }
-
-        $numFijos = (int) $this->safeFloat($this->numFijos);
-        $numCorredizas = (int) $this->safeFloat($this->numCorredizas);
-        $fijosIzq = (int) floor($this->safeDiv($numFijos, 2));
-        $fijosDer = $numFijos - $fijosIzq;
-
-        return [...array_fill(0, $fijosIzq, 'Fijo'), ...array_fill(0, $numCorredizas, 'Corrediza'), ...array_fill(0, $fijosDer, 'Fijo')];
-    }
-
-    public function getSobreluzPartesProperty()
-    {
-        $partes = [];
-        $divisiones = (int) $this->divisionesInferiores;
-        $altoS = $this->altoSup;
-        $anchoTotal = $this->safeFloat($this->ancho);
-
-        if ($divisiones >= 5) {
-            $cantidad = 3;
-            $anchoPorParte = $this->safeDiv($anchoTotal, $cantidad);
-        } elseif ($divisiones >= 3) {
-            $cantidad = 2;
-            $anchoPorParte = $this->safeDiv($anchoTotal, $cantidad);
-        } else {
-            $cantidad = 1;
-            $anchoPorParte = $anchoTotal;
-        }
-
-        for ($i = 1; $i <= $cantidad; $i++) {
-            $partes[] = [
-                'ancho' => $this->safeFloat($this->truncar($anchoPorParte, 1)) - $this->sbancho,
-                'alto' => $this->truncar($altoS, 1),
-                'label' => $cantidad > 1 ? "TL $i" : 'TL',
-            ];
-        }
-
-        return $partes;
-    }
-
-    public function getAccesoriosProperty()
-    {
-        $numCorredizas = (int) $this->safeFloat($this->numCorredizas);
-        return [
-            'garruchas' => $numCorredizas * 2,
-            'pestillos' => $numCorredizas,
-        ];
-    }
-
-    public function getMedidasBloquesProperty()
-    {
-        $bloques = [];
-        $totalHojas = (int) $this->divisionesInferiores;
-
-        if ($totalHojas <= 0) {
-            return [];
-        }
-
-        $anchoTotal = $this->safeFloat($this->anchoAjustado);
-        $anchoPorParte = $this->safeDiv($anchoTotal, $totalHojas);
-
-        foreach ($this->bloques as $tipo) {
-            $ajuste = $tipo === 'Fijo' ? $this->vidrio : -$this->vidrio;
-            $anchoFinal = $anchoPorParte + $ajuste;
-
-            $bloques[] = [
-                'tipo' => $tipo === 'Fijo' ? 'F' : 'C',
-                'ancho' => $this->truncar($anchoFinal, 1),
-                'alto' => $this->truncar($this->altoPuente - ($tipo === 'Fijo' ? $this->vfijo : $this->vcorrediza), 1),
-            ];
-        }
-
-        if (!empty($this->ordenBloques)) {
-            $ordenados = [];
-            foreach ($this->ordenBloques as $i) {
-                if (isset($bloques[$i])) {
-                    $ordenados[] = $bloques[$i];
-                }
-            }
-            return $ordenados;
-        }
-
-        return $bloques;
-    }
-    public function resetearProyecto()
-    {
-        // Reset de propiedades simples
-        $this->ancho = 205;
-        $this->alto = 165;
-        $this->altoPuente = 130;
-        $this->numCorredizas = 1;
-        $this->numFijos = 2;
-
-        $this->ordenBloques = [];
-        $this->sistemaSelet = null;
-        $this->planoExportHtml = null;
-
-        // Reset de ventanas
-        $this->ventanas = [
-            [
-                'nombre' => 'V - 1',
-                'ancho' => 205,
-                'alto' => 165,
-                'altoPuente' => 130,
-                'numCorredizas' => 1,
-                'numFijos' => 2,
-            ],
-        ];
-
-        $this->ventanaActiva = 0;
-    }
-
-    public function getDetalleModulosProperty()
-    {
-        $detalle = [];
-        $anchoTotal = $this->truncar($this->ancho);
-
-        $detalle['U 3/4'] = ['label' => '7955', 'alto' => $anchoTotal, 'cantidad' => 1];
-        $detalle['T/M'] = ['label' => '5283', 'alto' => $anchoTotal, 'cantidad' => 1];
-        $detalle['RIEL L'] = ['label' => '8413', 'alto' => $anchoTotal, 'cantidad' => 1];
-
-        $bloques = $this->medidasBloques;
-        $anchoFijos = [];
-        $anchoCorredizas = [];
-
-        foreach ($bloques as $b) {
-            $ancho = number_format((float) $b['ancho'], 1, '.', '');
-            if ($b['tipo'] === 'F') {
-                $anchoFijos[$ancho] = ($anchoFijos[$ancho] ?? 0) + 1;
-            } else {
-                $anchoCorredizas[$ancho] = ($anchoCorredizas[$ancho] ?? 0) + 1;
-            }
-        }
-
-        foreach ($anchoFijos as $ancho => $cant) {
-            $detalle["U F ($ancho cm)"] = ['label' => '3003', 'alto' => $ancho, 'cantidad' => $cant];
-        }
-        foreach ($anchoCorredizas as $ancho => $cant) {
-            $detalle["H ($ancho cm)"] = ['label' => '8220', 'alto' => $ancho, 'cantidad' => $cant];
-        }
-
-        $pfFijos = 0;
-        foreach ($bloques as $i => $b) {
-            if ($b['tipo'] === 'F') {
-                $izq = $bloques[$i - 1]['tipo'] ?? null;
-                $der = $bloques[$i + 1]['tipo'] ?? null;
-                $pfFijos += $izq === 'C' && $der === 'C' ? 2 : 1;
-            }
-        }
-
-        $detalle['PF Fijo'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - $this->pffijo), 'cantidad' => $pfFijos];
-        $detalle['PF Corrediza'] = ['label' => '8115', 'alto' => $this->truncar($this->altoPuente - $this->pfcorrediza), 'cantidad' => (int) $this->numCorredizas * 2];
-
-        return $detalle;
-    }
-
+    /* ===============================
+     |  CICLO DE VIDA
+     =============================== */
     public function mount()
     {
         $this->procesarPerfiles();
-        // Inicializar con una ventana
-        $this->ventanas[] = [
-            'nombre' => 'V - 1',
-            'ancho' => 205,
-            'alto' => 165,
-            'altoPuente' => 130,
-            'numCorredizas' => 1,
-            'numFijos' => 2,
-        ];
+
+        // Cargar ventanas desde sesión si existen (V3)
+        $this->ventanas = session('ventanas', [
+            [
+                'nombre' => 'V - 1',
+                'ancho' => $this->ancho,
+                'alto' => $this->alto,
+                'altoPuente' => $this->altoPuente,
+                'numCorredizas' => $this->numCorredizas,
+                'numFijos' => $this->numFijos,
+                'ordenBloques' => [],
+                'sistemaSelet' => null,
+            ],
+        ]);
+
+        $this->ventanaActiva = 0;
+        $this->cargarVentanaActiva();
     }
 
-    public $ventanas = [];
-    public $ventanaActiva = 0;
-
-    public function agregarVentana()
+    /* ===============================
+     |  HELPERS
+     =============================== */
+    private function num($v, float $d = 0): float
     {
-        $this->cambiarVentana($this->ventanaActiva); // Sincroniza actual
-        $nuevoId = count($this->ventanas) + 1;
-        $this->ventanas[] = [
-            'nombre' => "V - $nuevoId",
-            'ancho' => 205,
-            'alto' => 165,
-            'altoPuente' => 130,
-            'numCorredizas' => 1,
-            'numFijos' => 2
-        ];
-        
-        $this->cambiarVentana(count($this->ventanas) - 1);
-
-        // Verificamos que no haya datos vacíos por error
-        $datosLimpios = array_map(function ($v) {
-            return $v;
-        }, $this->ventanas);
-
-        session()->put('datos_lote', $datosLimpios);
-        session()->save();
-        // $datos = session('datos_lote', []);
-        // dd($datos);
+        return is_numeric($v) && $v > 0 ? (float) $v : $d;
     }
 
-    public function cambiarVentana($index)
+    private function div($a, $b, float $d = 0): float
     {
-        $this->ventanas[$this->ventanaActiva] = [
-            'nombre' => $this->ventanas[$this->ventanaActiva]['nombre'],
+        return ($b = $this->num($b)) === 0 ? $d : $this->num($a) / $b;
+    }
+
+    private function trunc($v, int $d = 1): float
+    {
+        $f = 10 ** $d;
+        return floor($this->num($v) * $f) / $f;
+    }
+
+    /* ===============================
+     |  COMPUTED PROPERTIES
+     =============================== */
+    public function getDivisionesInferioresProperty(): int
+    {
+        return $this->numCorredizas + $this->numFijos;
+    }
+
+    public function getAnchoAjustadoProperty(): float
+    {
+        return match ($this->divisionesInferiores) {
+            3 => $this->ancho + 1,
+            5 => $this->ancho + 2,
+            6 => $this->ancho + 3,
+            default => $this->ancho,
+        };
+    }
+
+    public function getAltoInfProperty(): float
+    {
+        return $this->altoPuente;
+    }
+
+    public function getAltoSupProperty(): float
+    {
+        return max(0, $this->alto - $this->altoPuente - $this->sobreluz);
+    }
+
+    public function getBloquesProperty(): array
+    {
+        $t = $this->divisionesInferiores;
+
+        if ($t === 5) {
+            return ['Fijo', 'Corrediza', 'Fijo', 'Corrediza', 'Fijo'];
+        }
+        if ($t === 6) {
+            return ['Fijo', 'Corrediza', 'Fijo', 'Corrediza', 'Fijo', 'Corrediza'];
+        }
+
+        $l = intdiv($this->numFijos, 2);
+        return [...array_fill(0, $l, 'Fijo'), ...array_fill(0, $this->numCorredizas, 'Corrediza'), ...array_fill(0, $this->numFijos - $l, 'Fijo')];
+    }
+
+    public function getSobreluzPartesProperty(): array
+    {
+        $d = $this->divisionesInferiores;
+        $c = $d >= 5 ? 3 : ($d >= 3 ? 2 : 1);
+        $a = $this->div($this->ancho, $c);
+
+        return collect(range(1, $c))
+            ->map(
+                fn($i) => [
+                    'ancho' => $this->trunc($a) - $this->sbancho,
+                    'alto' => $this->trunc($this->altoSup),
+                    'label' => $c > 1 ? "TL $i" : 'TL',
+                ],
+            )
+            ->toArray();
+    }
+
+    public function getMedidasBloquesProperty(): array
+    {
+        $base = $this->div($this->anchoAjustado, $this->divisionesInferiores);
+        return collect($this->bloques)
+            ->map(
+                fn($t) => [
+                    'tipo' => $t === 'Fijo' ? 'F' : 'C',
+                    'ancho' => $this->trunc($base + ($t === 'Fijo' ? $this->vidrio : -$this->vidrio)),
+                    'alto' => $this->trunc($this->altoPuente - ($t === 'Fijo' ? $this->vfijo : $this->vcorrediza)),
+                ],
+            )
+            ->toArray();
+    }
+
+    public function getDetalleModulosProperty(): array
+    {
+        $det = [];
+        $w = $this->trunc($this->ancho);
+
+        $det['U 3/4'] = ['label' => '7955', 'alto' => $w, 'cantidad' => 1];
+        $det['T/M'] = ['label' => '5283', 'alto' => $w, 'cantidad' => 1];
+        $det['RIEL L'] = ['label' => '8413', 'alto' => $w, 'cantidad' => 1];
+
+        $f = $c = [];
+        foreach ($this->medidasBloques as $b) {
+            $a = number_format($b['ancho'], 1, '.', '');
+            $b['tipo'] === 'F' ? ($f[$a] = ($f[$a] ?? 0) + 1) : ($c[$a] = ($c[$a] ?? 0) + 1);
+        }
+
+        foreach ($f as $a => $n) {
+            $det["U F ($a)"] = ['label' => '3003', 'alto' => $a, 'cantidad' => $n];
+        }
+        foreach ($c as $a => $n) {
+            $det["H ($a)"] = ['label' => '8220', 'alto' => $a, 'cantidad' => $n];
+        }
+
+        $pf = 0;
+        foreach ($this->bloques as $i => $b) {
+            if ($b === 'Fijo') {
+                $pf += ($this->bloques[$i - 1] ?? null) === 'Corrediza' && ($this->bloques[$i + 1] ?? null) === 'Corrediza' ? 2 : 1;
+            }
+        }
+
+        $det['PF Fijo'] = ['label' => '8115', 'alto' => $this->trunc($this->altoPuente - $this->pffijo), 'cantidad' => $pf];
+        $det['PF Corrediza'] = ['label' => '8115', 'alto' => $this->trunc($this->altoPuente - $this->pfcorrediza), 'cantidad' => $this->numCorredizas * 2];
+
+        return $det;
+    }
+
+    /* ===============================
+     |  VENTANAS (GESTIÓN)
+     =============================== */
+
+    // V2: snapshot completo
+    private function snapshotVentana(): array
+    {
+        return [
             'ancho' => $this->ancho,
             'alto' => $this->alto,
             'altoPuente' => $this->altoPuente,
             'numCorredizas' => $this->numCorredizas,
             'numFijos' => $this->numFijos,
-
-            // Forzamos la creación de un arreglo independiente para cada parte
-            'altoInf' => $this->getAltoInfProperty(),
-            'altoSup' => $this->getAltoSupProperty(),
-            'bloques' => json_decode(json_encode($this->getMedidasBloquesProperty()), true),
-            'sobreluz' => json_decode(json_encode($this->getSobreluzPartesProperty()), true),
-            'detalle' => json_decode(json_encode($this->getDetalleModulosProperty()), true),
-            'catalogo' => $this->data, // Guardamos el catálogo vigente en esa ventana
+            'ordenBloques' => $this->ordenBloques,
+            'sistemaSelet' => $this->sistemaSelet,
         ];
+    }
 
-        // 2. Cambiamos al nuevo índice
-        $this->ventanaActiva = $index;
+    private function guardarVentanaActual(): void
+    {
+        if (!isset($this->ventanas[$this->ventanaActiva])) {
+            return;
+        }
 
-        // 3. Cargamos los valores de la nueva ventana a los inputs
-        $v = $this->ventanas[$index];
+        $this->ventanas[$this->ventanaActiva] = array_merge(['nombre' => $this->ventanas[$this->ventanaActiva]['nombre']], $this->snapshotVentana());
+    }
+
+    private function cargarVentanaActiva(): void
+    {
+        $v = $this->ventanas[$this->ventanaActiva];
+
         $this->ancho = $v['ancho'];
         $this->alto = $v['alto'];
         $this->altoPuente = $v['altoPuente'];
         $this->numCorredizas = $v['numCorredizas'];
         $this->numFijos = $v['numFijos'];
+        $this->ordenBloques = $v['ordenBloques'] ?? [];
+        $this->sistemaSelet = $v['sistemaSelet'] ?? null;
     }
 
+    public function cambiarVentana(int $i): void
+    {
+        $this->guardarVentanaActual();
+        $this->ventanaActiva = $i;
+        $this->cargarVentanaActiva();
+    }
+
+    public function agregarVentana(): void
+    {
+        $this->guardarVentanaActual();
+
+        $this->ventanas[] = array_merge(['nombre' => 'V - ' . (count($this->ventanas) + 1)], $this->snapshotVentana());
+
+        $this->ventanaActiva = count($this->ventanas) - 1;
+        $this->cargarVentanaActiva();
+    }
+
+    // V3: Guardado automático en sesión
+    public function updated($propertyName)
+    {
+        $this->guardarVentanaActual();
+        session()->put('ventanas', $this->ventanas);
+    }
+
+    /* ===============================
+     |  EXCEL
+     =============================== */
+    public function procesarPerfiles(): void
+    {
+        $ruta = public_path('datos.xlsx');
+        if (!file_exists($ruta)) {
+            return;
+        }
+
+        $this->data = collect(Excel::toArray([], $ruta)[0])
+            ->pluck(0)
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
+    public function getAccesoriosProperty(): array
+    {
+        return [
+            'garruchas' => $this->numCorredizas * 2,
+            'pestillos' => $this->numCorredizas,
+            'topes' => $this->numCorredizas * 2,
+        ];
+    }
+
+    private function calcularMedidasBloques(float $ancho, float $altoPuente, int $numCorredizas, int $numFijos, array $ordenBloques = []): array
+    {
+        $divisiones = $numCorredizas + $numFijos;
+        if ($divisiones <= 0) {
+            return [];
+        }
+
+        $anchoAjustado = $ancho;
+        if ($divisiones === 3) {
+            $anchoAjustado += 1;
+        }
+        if ($divisiones === 5) {
+            $anchoAjustado += 2;
+        }
+        if ($divisiones === 6) {
+            $anchoAjustado += 3;
+        }
+
+        $anchoPorParte = $anchoAjustado / $divisiones;
+
+        if ($divisiones === 5) {
+            $bloques = ['F', 'C', 'F', 'C', 'F'];
+        } elseif ($divisiones === 6) {
+            $bloques = ['F', 'C', 'F', 'C', 'F', 'C'];
+        } else {
+            $fijosIzq = intdiv($numFijos, 2);
+            $fijosDer = $numFijos - $fijosIzq;
+            $bloques = array_merge(array_fill(0, $fijosIzq, 'F'), array_fill(0, $numCorredizas, 'C'), array_fill(0, $fijosDer, 'F'));
+        }
+
+        $resultado = [];
+        foreach ($bloques as $tipo) {
+            $ajuste = $tipo === 'F' ? $this->vidrio : -$this->vidrio;
+
+            $resultado[] = [
+                'tipo' => $tipo,
+                'ancho' => $this->trunc($anchoPorParte + $ajuste, 1),
+                'alto' => $this->trunc($altoPuente - ($tipo === 'F' ? $this->vfijo : $this->vcorrediza), 1),
+            ];
+        }
+
+        if (!empty($ordenBloques)) {
+            $ordenados = [];
+            foreach ($ordenBloques as $i) {
+                if (isset($resultado[$i])) {
+                    $ordenados[] = $resultado[$i];
+                }
+            }
+            return $ordenados;
+        }
+
+        return $resultado;
+    }
+    private function calcularAnchoAjustado(float $ancho, int $numCorredizas, int $numFijos): float
+    {
+        $divisiones = $numCorredizas + $numFijos;
+
+        return match ($divisiones) {
+            3 => $ancho + 1,
+            5 => $ancho + 2,
+            6 => $ancho + 3,
+            default => $ancho,
+        };
+    }
+    private function calcularDetalleModulos(float $ancho, float $altoPuente, int $numCorredizas, int $numFijos): array
+    {
+        $divisiones = $numCorredizas + $numFijos;
+        $anchoAjustado = $this->calcularAnchoAjustado($ancho, $numCorredizas, $numFijos);
+
+        $base = $anchoAjustado / $divisiones;
+
+        // Bloques
+        if ($divisiones === 5) {
+            $bloques = ['F', 'C', 'F', 'C', 'F'];
+        } elseif ($divisiones === 6) {
+            $bloques = ['F', 'C', 'F', 'C', 'F', 'C'];
+        } else {
+            $fIzq = intdiv($numFijos, 2);
+            $fDer = $numFijos - $fIzq;
+            $bloques = array_merge(array_fill(0, $fIzq, 'F'), array_fill(0, $numCorredizas, 'C'), array_fill(0, $fDer, 'F'));
+        }
+
+        $det = [];
+
+        // Perfiles horizontales
+        $w = $this->trunc($ancho);
+        $det['U 3/4'] = ['label' => '7955', 'alto' => $w, 'cantidad' => 1];
+        $det['T/M'] = ['label' => '5283', 'alto' => $w, 'cantidad' => 1];
+        $det['RIEL L'] = ['label' => '8413', 'alto' => $w, 'cantidad' => 1];
+
+        $f = $c = [];
+
+        foreach ($bloques as $tipo) {
+            $a = $this->trunc($base + ($tipo === 'F' ? $this->vidrio : -$this->vidrio));
+            $key = number_format($a, 1, '.', '');
+
+            $tipo === 'F' ? ($f[$key] = ($f[$key] ?? 0) + 1) : ($c[$key] = ($c[$key] ?? 0) + 1);
+        }
+
+        foreach ($f as $a => $n) {
+            $det["U F ($a)"] = ['label' => '3003', 'alto' => $a, 'cantidad' => $n];
+        }
+
+        foreach ($c as $a => $n) {
+            $det["H ($a)"] = ['label' => '8220', 'alto' => $a, 'cantidad' => $n];
+        }
+
+        // Parantes
+        $pf = 0;
+        foreach ($bloques as $i => $b) {
+            if ($b === 'F') {
+                $pf += ($bloques[$i - 1] ?? null) === 'C' && ($bloques[$i + 1] ?? null) === 'C' ? 2 : 1;
+            }
+        }
+
+        $det['PF Fijo'] = [
+            'label' => '8115',
+            'alto' => $this->trunc($altoPuente - $this->pffijo),
+            'cantidad' => $pf,
+        ];
+
+        $det['PF Corrediza'] = [
+            'label' => '8115',
+            'alto' => $this->trunc($altoPuente - $this->pfcorrediza),
+            'cantidad' => $numCorredizas * 2,
+        ];
+
+        // Accesorios corrediza
+        $det['Garruchas'] = [
+            'label' => 'Garrucha armada',
+            'alto' => 0,
+            'cantidad' => $numCorredizas * 2,
+        ];
+        $det['Pestillos'] = [
+            'label' => 'Accesorio',
+            'alto' => 0,
+            'cantidad' => $numCorredizas,
+        ];
+
+        return $det;
+    }
+
+    public function imprimirTodo(): void
+    {
+        $ventanasCompletas = [];
+
+        $estadoOriginal = [
+            'ancho' => $this->ancho,
+            'alto' => $this->alto,
+            'altoPuente' => $this->altoPuente,
+            'numCorredizas' => $this->numCorredizas,
+            'numFijos' => $this->numFijos,
+            'ordenBloques' => $this->ordenBloques,
+            'ventanaActiva' => $this->ventanaActiva,
+        ];
+
+        foreach ($this->ventanas as $index => $v) {
+            // NO necesitamos cambiar el estado del componente
+            // para calcular bloques, lo hacemos con la función directa
+            $anchoAjustado = $this->calcularAnchoAjustado($v['ancho'], $v['numCorredizas'], $v['numFijos']);
+            $ventanasCompletas[] = [
+                'nombre' => $v['nombre'],
+                'ancho' => $v['ancho'],
+                'alto' => $v['alto'],
+                'altoPuente' => $v['altoPuente'],
+                'numCorredizas' => $v['numCorredizas'],
+                'numFijos' => $v['numFijos'],
+
+                'altoInf' => $v['altoPuente'],
+                'altoSup' => max(0, $v['alto'] - $v['altoPuente'] - $this->sobreluz),
+
+                'bloques' => $this->calcularMedidasBloques($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+                //'sobreluz' => $this->calcularSobreluz($v['ancho'], $v['alto'], $v['altoPuente']),
+                'sobreluz' => $this->calcularSobreluz($v['ancho'], $v['alto'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+
+                //'sobreluz' => $this->getSobreluzPartesProperty(),
+                'anchoAjustado' => $anchoAjustado,
+                'detalle' => $this->calcularDetalleModulos($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+                //'detalle' => $this->getDetalleModulosProperty(),
+                'catalogo' => $this->data,
+            ];
+        }
+
+        session()->put('datos_lote', $ventanasCompletas);
+        session()->save();
+
+        //$datos = session('datos_lote', []);
+        //dd($datos);
+        $this->dispatch('disparar-impresion-total');
+    }
+    private function calcularSobreluz(float $ancho, float $alto, float $altoPuente, int $numCorredizas, int $numFijos): array
+    {
+        $altoSup = max(0, $alto - $altoPuente - $this->sobreluz);
+
+        if ($altoSup <= 0) {
+            return [];
+        }
+
+        $divisiones = $numCorredizas + $numFijos;
+        $c = $divisiones >= 5 ? 3 : ($divisiones >= 3 ? 2 : 1);
+        $a = $ancho / $c;
+
+        return collect(range(1, $c))
+            ->map(
+                fn($i) => [
+                    'ancho' => $this->trunc($a) - $this->sbancho,
+                    'alto' => $this->trunc($altoSup),
+                    'label' => $c > 1 ? "TL $i" : 'TL',
+                ],
+            )
+            ->toArray();
+    }
+
+    public function confirmarImpresion(): void
+    {
+        session()->forget('datos_lote');
+        session()->forget('ventanas'); // si también quieres borrar ventanas
+        session()->save();
+        // Reiniciar estado del componente
+        $this->ventanas = [
+            [
+                'nombre' => 'V - 1',
+                'ancho' => $this->ancho,
+                'alto' => $this->alto,
+                'altoPuente' => $this->altoPuente,
+                'numCorredizas' => $this->numCorredizas,
+                'numFijos' => $this->numFijos,
+                'ordenBloques' => [],
+                'sistemaSelet' => null,
+            ],
+        ];
+
+        $this->ventanaActiva = 0;
+    }
+    public function eliminarVentana(int $index): void
+    {
+        // No permitir borrar si solo queda una
+        if (count($this->ventanas) <= 1) {
+            return;
+        }
+
+        unset($this->ventanas[$index]);
+
+        // Reindexar array
+        $this->ventanas = array_values($this->ventanas);
+
+        // Ajustar ventana activa
+        if ($this->ventanaActiva >= count($this->ventanas)) {
+            $this->ventanaActiva = count($this->ventanas) - 1;
+        }
+
+        $this->cargarVentanaActiva();
+
+        // Guardar en sesión
+        session()->put('ventanas', $this->ventanas);
+    }
 };
+
+// $datos = session('datos_lote', []);
+// dd($datos);
+
 ?>
 
 <div wire:cloak class="relative p-2 md:p-6 max-w-6xl mx-auto mb-[100px]">
     <div class="flex justify-between items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
         <div class="flex gap-">
             @foreach ($ventanas as $index => $v)
-                <button wire:click="cambiarVentana({{ $index }})"
-                    class="px-6 py-2 text-xs font-black uppercase tracking-tighter transition-all rounded-t-xl border-t border-l border-r {{ $ventanaActiva == $index ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]' : 'bg-gray-100 border-transparent text-gray-400 hover:bg-gray-200' }}">
-                    <i class="fa-solid fa-window-maximize mr-2"></i> {{ $v['nombre'] }}
-                </button>
+                <div
+                    class="group relative flex items-center rounded-t-xl border transition-all
+        {{ $ventanaActiva == $index
+            ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]'
+            : 'bg-gray-100 border-transparent text-gray-400 hover:bg-gray-200' }}">
+
+                    {{-- Botón principal --}}
+                    <button wire:click="cambiarVentana({{ $index }})"
+                        class="flex items-center gap-2 px-5 py-2 text-xs font-black uppercase tracking-tighter focus:outline-none">
+                        <i class="fa-solid fa-window-maximize"></i>
+                        {{ $v['nombre'] }}
+                    </button>
+
+                    {{-- Botón cerrar --}}
+                    <button wire:click.stop="eliminarVentana({{ $index }})"
+                        class="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px]
+                   opacity-0 group-hover:opacity-100 transition
+                   hover:bg-red-600 flex items-center justify-center shadow">
+                        ✕
+                    </button>
+                </div>
             @endforeach
+
             <button wire:click="agregarVentana"
                 class="ml-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
                 <i class="fa-solid fa-plus-circle"></i> Nuevo
+            </button>
+            <button wire:click="confirmarImpresion"
+                class="ml-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
+                <i class="fa-solid fa-trash"></i> Vaciar
             </button>
         </div>
         <div class="flex gap-2">
@@ -409,7 +605,7 @@ new class extends Component {
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Ancho <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.
+            <input type="number" wire:model.blur
             ="ancho" oninput="if(this.value < 0) this.value = 1;"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
@@ -444,14 +640,16 @@ new class extends Component {
         <iframe id="iframeLote" src="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
 
         <script>
-            window.addEventListener('disparar-impresion-total', event => {
+            window.addEventListener('disparar-impresion-total', () => {
                 const iframe = document.getElementById('iframeLote');
                 iframe.src = "{{ route('plano.imprimir') }}";
 
                 iframe.onload = function() {
+
                     setTimeout(() => {
                         iframe.contentWindow.focus();
                         iframe.contentWindow.print();
+
                     }, 600);
                 };
             });
@@ -722,6 +920,23 @@ new class extends Component {
                     @endforeach
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div wire:loading class="fixed inset-0 z-50 bg-gray-500/50">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div role="status">
+                <svg aria-hidden="true" class="w-16 h-16 text-gray-200 animate-spin fill-blue-600"
+                    viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                        fill="currentColor" />
+                    <path
+                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0872 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                        fill="currentFill" />
+                </svg>
+                <span class="sr-only">Cargando...</span>
+            </div>
         </div>
     </div>
 </div>

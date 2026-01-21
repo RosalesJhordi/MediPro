@@ -1,13 +1,16 @@
 <?php
 
 use Livewire\Component;
+use Maatwebsite\Excel\Facades\Excel;
 
 new class extends Component {
+    /* ===============================
+     |  ESTADO BASE PUERTA
+     =============================== */
     public int $material = 7852;
     public float $anchoTotal = 90;
     public float $altoTotal = 220;
     public string $color = 'negro';
-    public string $vista = '2d';
 
     public float $tubo = 2.5;
     public float $canal = 2.2;
@@ -18,170 +21,321 @@ new class extends Component {
     public float $luzLados = 0.6;
 
     public array $datos = [];
+    public array $data = [];
 
+    /* ===============================
+     |  PUERTAS
+     =============================== */
+    public array $puertas = [];
+    public int $puertaActiva = 0;
+
+    /* ===============================
+     |  CICLO DE VIDA
+     =============================== */
     public function mount()
     {
         $this->procesarPerfiles();
+
+        $this->puertas = [array_merge(['nombre' => 'P - 1'], $this->snapshotPuerta())];
+
+        $this->puertaActiva = 0;
         $this->recalcular();
     }
-    public $data = [];
-    public function procesarPerfiles()
+
+    /* ===============================
+     |  SNAPSHOT / RESTORE
+     =============================== */
+    private function snapshotPuerta(): array
     {
-        $rutaArchivo = public_path('datos.xlsx');
+        return [
+            'material' => $this->material,
+            'anchoTotal' => $this->anchoTotal,
+            'altoTotal' => $this->altoTotal,
+            'color' => $this->color,
+            'datos' => $this->datos,
+        ];
+    }
 
-        if (!file_exists($rutaArchivo)) {
-            $catalogoExcel = [];
-        } else {
-            $datosExcel = \Maatwebsite\Excel\Facades\Excel::toArray([], $rutaArchivo)[0];
-            $catalogoExcel = [];
-
-            foreach ($datosExcel as $fila) {
-                $nombreProducto = isset($fila[0]) ? trim($fila[0]) : null;
-
-                if (!empty($nombreProducto)) {
-                    $catalogoExcel[] = $nombreProducto;
-                }
-            }
+    private function guardarPuertaActual(): void
+    {
+        if (!isset($this->puertas[$this->puertaActiva])) {
+            return;
         }
 
-        $this->data = $catalogoExcel;
+        $this->puertas[$this->puertaActiva] = array_merge(['nombre' => $this->puertas[$this->puertaActiva]['nombre']], $this->snapshotPuerta());
+
+        session()->put('puertas', $this->puertas);
     }
 
-    public function updatedMaterial($value)
+    private function cargarPuerta(int $i): void
     {
-        $this->material = (int) $value; // 👈 CLAVE
+        $p = $this->puertas[$i];
+
+        $this->material = $p['material'];
+        $this->anchoTotal = $p['anchoTotal'];
+        $this->altoTotal = $p['altoTotal'];
+        $this->color = $p['color'];
+
         $this->recalcular();
     }
 
-    public function updatedAnchoTotal()
+    /* ===============================
+     |  ACCIONES PUERTAS
+     =============================== */
+    public function cambiarPuerta(int $i): void
     {
+        $this->guardarPuertaActual();
+        $this->puertaActiva = $i;
+        $this->cargarPuertaActiva();
+    }
+    private function cargarPuertaActiva(): void
+    {
+        if (!isset($this->puertas[$this->puertaActiva])) {
+            return;
+        }
+
+        $p = $this->puertas[$this->puertaActiva];
+
+        $this->material = $p['material'];
+        $this->anchoTotal = $p['anchoTotal'];
+        $this->altoTotal = $p['altoTotal'];
+        $this->color = $p['color'];
+        $this->datos = $p['datos'] ?? [];
+    }
+
+    public function agregarPuerta(): void
+    {
+        $this->guardarPuertaActual();
+
+        $this->material = 7852;
+        $this->anchoTotal = 90;
+        $this->altoTotal = 220;
+        $this->color = 'negro';
+        $this->recalcular();
+
+        $this->puertas[] = array_merge(['nombre' => 'P - ' . (count($this->puertas) + 1)], $this->snapshotPuerta());
+
+        $this->puertaActiva = count($this->puertas) - 1;
+    }
+
+    private function resetPuertas(): void
+    {
+        $this->puertas = [['nombre' => 'P - 1']];
+
+        $this->puertaActiva = 0;
+
+        $this->material = 7852;
+        $this->anchoTotal = 90;
+        $this->altoTotal = 220;
+        $this->color = 'negro';
+        $this->datos = [];
+
         $this->recalcular();
     }
 
-    public function updatedAltoTotal()
+    /* ===============================
+     |  CÁLCULOS
+     =============================== */
+    public function updated($prop)
     {
-        $this->recalcular();
+        if (in_array($prop, ['material', 'anchoTotal', 'altoTotal', 'color'])) {
+            $this->recalcular();
+        }
     }
 
-    /* =======================
-     *  LÓGICA PRINCIPAL
-     * ======================= */
     private function recalcular(): void
     {
-        $this->dispatch('redibujar-puerta', [
-            'ancho' => $this->anchoTotal,
-            'alto' => $this->altoTotal,
-        ]);
-
         match ($this->material) {
             7830 => $this->calcularMaterial('canal', 7830),
             7852 => $this->calcularMaterial('tubo', 7852),
             default => ($this->datos = []),
         };
     }
-    public $dimensionPlancha = '183x244';
+
     private function calcularMaterial(string $tipo, int $codigo): void
     {
         $perfil = $tipo === 'canal' ? $this->canal : $this->tubo;
 
-        /* ===== Tubos ===== */
         $tuboLados = $this->altoTotal;
         $tuboArriba = $this->anchoTotal - $perfil * 2;
 
-        /* ===== Cuadrados ===== */
         $cuadradoAA = $this->anchoTotal - $perfil * 2;
         $lados = $cuadradoAA - $this->luzLados - $this->cuadrado * 2;
 
         $cuadradoLA = $this->altoTotal - $this->luzAbajo - $this->luzArriba;
         $arribas = $cuadradoLA - $perfil;
 
-        /* ===== Paflón ===== */
         $paflon = $cuadradoAA - $this->cuadrado * 2 - $this->luzLados;
 
-        /* ===== Vidrios ===== */
         $vidrioAlto = ($arribas - $this->cuadrado * 2 - $this->paflon) / 2;
         $vidrioAncho = $cuadradoAA - $this->cuadrado * 2 - $this->luzLados;
 
         $this->datos = [
-            "{$codigo} - Lados" => [
-                'medida' => $tuboLados,
-                'cantidad' => 2,
-            ],
-            "{$codigo} - Arriba" => [
-                'medida' => $tuboArriba,
-                'cantidad' => 1,
-            ],
-            '5414 - Arriba y Abajo' => [
-                'medida' => $lados,
-                'cantidad' => 2,
-            ],
-            '5414 - Lados' => [
-                'medida' => $arribas,
-                'cantidad' => 2,
-            ],
-            '5227 - Medio' => [
-                'medida' => $paflon,
-                'cantidad' => 1,
-            ],
+            "{$codigo} - Lados" => ['medida' => $tuboLados, 'cantidad' => 2],
+            "{$codigo} - Arriba" => ['medida' => $tuboArriba, 'cantidad' => 1],
+            '5414 - Arriba y Abajo' => ['medida' => $lados, 'cantidad' => 2],
+            '5414 - Lados' => ['medida' => $arribas, 'cantidad' => 2],
+            '5227 - Medio' => ['medida' => $paflon, 'cantidad' => 1],
             'Vidrios' => [
                 'medida' => number_format($vidrioAlto - 0.5, 2) . ' x ' . number_format($vidrioAncho - 0.5, 2),
                 'cantidad' => 2,
             ],
-            'Bisagras' => [
-                'medida' => '3x3',
-                'cantidad' => 3,
-            ],
-            'Chapas' => [
-                'medida' => 'Unidad',
-                'cantidad' => 1,
-            ],
+            'Bisagras' => ['medida' => '3x3', 'cantidad' => 3],
+            'Chapas' => ['medida' => 'Unidad', 'cantidad' => 1],
         ];
     }
+
+    /* ===============================
+     |  EXCEL
+     =============================== */
+    public function procesarPerfiles()
+    {
+        $ruta = public_path('datos.xlsx');
+        if (!file_exists($ruta)) {
+            return;
+        }
+
+        $this->data = collect(Excel::toArray([], $ruta)[0])
+            ->pluck(0)
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+    public function imprimirTodo(): void
+    {
+        $this->guardarPuertaActual();
+
+        session()->put('puertas', $this->puertas);
+
+        $this->dispatch('imprimir-puertas');
+    }
+    protected $listeners = ['limpiar-puertas'];
+
+    public function limpiarPuertas(): void
+    {
+        session()->forget('puertas');
+        $this->resetPuertas();
+    }
 };
+
 ?>
 
 <div class="p-2 md:p-6 max-w-5xl mx-auto mb-[30px] font-sans">
     <!-- Título -->
+    <div wire:loading class="fixed inset-0 z-50 bg-gray-500/50">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div role="status">
+                <svg aria-hidden="true" class="w-16 h-16 text-gray-200 animate-spin fill-blue-600" viewBox="0 0 100 101"
+                    fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                        fill="currentColor" />
+                    <path
+                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0872 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                        fill="currentFill" />
+                </svg>
+                <span class="sr-only">Cargando...</span>
+            </div>
+        </div>
+    </div>
     <h1 class="text-3xl font-extrabold mb-6 flex items-center justify-center gap-3 text-blue-800">
         Puerta
     </h1>
 
 
-    <div class="grid grid-cols-3 lg:flex gap-10 text-black mb-2 justify-between items-center">
-        <div class="flex w-full flex-col">
-            <label class="block text-sm font-semibold">Ancho</label>
-            <input type="text" value="90" wire:model.lazy='anchoTotal'
-                class="w-full  input input-bordered px-2 bg-white">
-        </div>
 
-        <div class="flex w-full  flex-col">
-            <label class="block text-sm font-semibold ">Alto</label>
-            <input type="text" value="220" wire:model.lazy='altoTotal'
-                class="w-full input input-bordered px-2 bg-white">
-        </div>
 
-        <div class="flex w-full  flex-col">
-            <label class=" text-sm font-semibold text-gray-600">Material</label>
-            <select wire:model.live='material' class="w-full  p-2 input-bordered  px-2 bg-white text-gray-800">
-                <option value="7830">Canal 60 - 7830</option>
-                <option value="7852">Rectangular 60 - 7852</option>
-            </select>
+    <div class="flex justify-between items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
+        <div class="flex gap-">
+            @foreach ($puertas as $index => $v)
+                <button wire:click="cambiarPuerta({{ $index }})"
+                    class="px-6 py-2 text-xs font-black uppercase tracking-tighter transition-all rounded-t-xl border-t border-l border-r {{ $puertaActiva == $index ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]' : 'bg-gray-100 border-transparent text-gray-400 hover:bg-gray-200' }}">
+                    <i class="fa-solid fa-door-closed"></i> {{ $v['nombre'] }}
+                </button>
+            @endforeach
+            <button wire:click="agregarPuerta"
+                class="ml-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
+                <i class="fa-solid fa-plus-circle"></i> Nuevo
+            </button>
+            <button wire:click="confirmarImpresion"
+                class="ml-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold">
+                <i class="fa-solid fa-trash"></i> Vaciar
+            </button>
         </div>
-        <!-- COLOR -->
-        <div class="flex w-full  flex-col">
-            <label class="block text-sm font-semibold text-gray-600">Color</label>
-            <select wire:model.live="color" class=" w-full  p-2 rounded-xl input-bordered bg-white text-gray-800">
-                <option value="gris">Gris</option>
-                <option value="negro">Negro</option>
-            </select>
+        <div class="flex gap-2">
+            <button
+                class="px-6 py-2 bg-orange-600 text-white text-xs font-black rounded-xl hover:bg-orange-700 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-scissors"></i> Optimizar
+            </button>
+
+            <button onclick="imprimirProyecto()"
+                class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i> IMPRIMIR PROYECTO
+            </button>
         </div>
 
     </div>
+    <script>
+        function imprimirProyecto() {
+            Livewire.dispatch('preparar-impresion');
+            window.print();
+        }
+    </script>
+    <div class="w-full mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
+            <!-- Ancho -->
+            <div class="flex flex-col">
+                <label class="text-sm font-semibold text-gray-700 mb-1">
+                    Ancho (cm)
+                </label>
+                <input type="text" wire:model.lazy="anchoTotal" placeholder="Ej: 90"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm
+                       focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+            </div>
+
+            <!-- Alto -->
+            <div class="flex flex-col">
+                <label class="text-sm font-semibold text-gray-700 mb-1">
+                    Alto (cm)
+                </label>
+                <input type="text" wire:model.lazy="altoTotal" placeholder="Ej: 220"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm
+                       focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+            </div>
+
+            <!-- Material -->
+            <div class="flex flex-col">
+                <label class="text-sm font-semibold text-gray-700 mb-1">
+                    Material
+                </label>
+                <select wire:model.live="material"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800
+                       focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <option value="7830">Canal 60 - 7830</option>
+                    <option value="7852">Rectangular 60 - 7852</option>
+                </select>
+            </div>
+
+            <!-- Color -->
+            <div class="flex flex-col">
+                <label class="text-sm font-semibold text-gray-700 mb-1">
+                    Color
+                </label>
+                <select wire:model.live="color"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800
+                       focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <option value="gris">Gris</option>
+                    <option value="negro">Negro</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
 
     <div class="block  lg:flex justify-center gap-2 items-center">
         <div
-            class="flex w-1/2 flex-col items-center justify-center bg-gray-50 p-6 md:p-10 rounded-2xl border border-gray-200 shadow-inner">
+            class="flex w-full lg:w-1/2 flex-col items-center justify-center bg-gray-50 p-6 md:p-10 rounded-2xl border border-gray-200 shadow-inner">
 
             <div class="mb-8 text-center">
                 <span
@@ -293,7 +447,7 @@ new class extends Component {
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row items-start justify-center w-1/2">
+        <div class="flex flex-col md:flex-row items-start justify-center w-full lg:w-1/2">
             <div class="mt-6 w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
                 <div class="bg-gray-50/50 border-b border-gray-200 px-5 py-4 flex items-center justify-between">
@@ -371,7 +525,6 @@ new class extends Component {
             </div>
         </div>
     </div>
-
 
     <style>
         body {
