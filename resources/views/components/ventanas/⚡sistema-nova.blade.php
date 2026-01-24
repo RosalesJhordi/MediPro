@@ -186,8 +186,18 @@ new class extends Component {
             }
         }
 
-        $det['PF Fijo'] = ['label' => '8115', 'alto' => $this->trunc($this->altoPuente - $this->pffijo), 'cantidad' => $pf];
-        $det['PF Corrediza'] = ['label' => '8115', 'alto' => $this->trunc($this->altoPuente - $this->pfcorrediza), 'cantidad' => $this->numCorredizas * 2];
+        $det['PF Fijo'] = [
+            'label' => '8115',
+            'tipo' => 'FIJO',
+            'alto' => $this->trunc($this->altoPuente - $this->pffijo),
+            'cantidad' => $pf,
+        ];
+        $det['PF Corrediza'] = [
+            'label' => '8115',
+            'tipo' => 'CORREDIZA',
+            'alto' => $this->trunc($this->altoPuente - $this->pfcorrediza),
+            'cantidad' => $this->numCorredizas * 2,
+        ];
 
         return $det;
     }
@@ -416,7 +426,7 @@ new class extends Component {
             'cantidad' => $numCorredizas * 2,
         ];
         $det['Pestillos'] = [
-            'label' => 'Accesorio',
+            'label' => 'Pestillos',
             'alto' => 0,
             'cantidad' => $numCorredizas,
         ];
@@ -538,6 +548,54 @@ new class extends Component {
         // Guardar en sesión
         session()->put('ventanas', $this->ventanas);
     }
+
+    //opti
+    public function optimizar()
+    {
+        $ventanasCompletas = [];
+
+        foreach ($this->ventanas as $v) {
+            $anchoAjustado = $this->calcularAnchoAjustado($v['ancho'], $v['numCorredizas'], $v['numFijos']);
+
+            $altoInf = $v['altoPuente'];
+            $altoSup = max(0, $v['alto'] - $v['altoPuente']);
+
+            $ventanasCompletas[] = [
+                // ================== IDENTIDAD ==================
+                'nombre' => $v['nombre'],
+
+                // ================== MEDIDAS BASE ==================
+                'ancho' => (float) $v['ancho'],
+                'alto' => (float) $v['alto'],
+                'altoPuente' => (float) $v['altoPuente'],
+                'anchoAjustado' => $anchoAjustado,
+
+                // ================== CONFIGURACIÓN ==================
+                'numCorredizas' => (int) $v['numCorredizas'],
+                'numFijos' => (int) $v['numFijos'],
+
+                // ================== ALTURAS ==================
+                'altoInf' => $altoInf,
+                'altoSup' => $altoSup,
+
+                // ================== VIDRIOS ==================
+                // bloques = vidrios principales
+                'bloques' => $this->calcularMedidasBloques($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+
+                // sobreluz = tragaluz / vidrios superiores
+                'sobreluz' => $this->calcularSobreluz($v['ancho'], $v['alto'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+
+                // ================== ALUMINIOS ==================
+                'detalle' => $this->calcularDetalleModulos($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
+
+                // ================== CATÁLOGO ==================
+                'catalogo' => $this->data,
+            ];
+        }
+
+        session()->put('datos_lote', $ventanasCompletas);
+        return redirect()->route('optimizador');
+    }
 };
 
 // $datos = session('datos_lote', []);
@@ -546,8 +604,10 @@ new class extends Component {
 ?>
 
 <div wire:cloak class="relative p-2 md:p-6 max-w-6xl mx-auto mb-[100px]">
-    <div class="flex justify-between items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
-        <div class="flex gap-">
+
+    <div
+        class="lg:flex grid grid-cols-1 lg:gap-2 justify-between items-center gap-1 mb-6 px-2 overflow-x-auto border-b border-gray-200">
+        <div class="flex flex-wrap items-center gap-2">
             @foreach ($ventanas as $index => $v)
                 <div
                     class="group relative flex items-center rounded-t-xl border transition-all
@@ -566,7 +626,7 @@ new class extends Component {
                     <button wire:click.stop="eliminarVentana({{ $index }})"
                         class="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px]
                    opacity-0 group-hover:opacity-100 transition
-                   hover:bg-red-600 flex items-center justify-center shadow">
+                   lg:hover:bg-red-600  flex items-center justify-center shadow">
                         ✕
                     </button>
                 </div>
@@ -582,7 +642,7 @@ new class extends Component {
             </button>
         </div>
         <div class="flex gap-2">
-            <button
+            <button wire:click='optimizar' wire:navigate
                 class="px-6 py-2 bg-orange-600 text-white text-xs font-black rounded-xl hover:bg-orange-700 transition-all flex items-center gap-2">
                 <i class="fa-solid fa-scissors"></i> Optimizar
             </button>
@@ -595,13 +655,7 @@ new class extends Component {
 
     </div>
 
-    <div class="mb-4 px-4">
-        <span class="text-[10px] bg-green-400 text-white px-3 py-1 rounded-full font-bold">
-            EDITANDO: {{ $ventanas[$ventanaActiva]['nombre'] }}
-        </span>
-    </div>
-
-    <div class="grid grid-cols-2 gap-6 p-2 mb-6 md:grid-cols-3 lg:grid-cols-5">
+    <div class="grid grid-cols-3 gap-2 lg:gap-6 p-2 mb-6 md:grid-cols-3 lg:grid-cols-5">
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Ancho <span
                     class="text-blue-500">(cm)</span></label>
@@ -616,7 +670,7 @@ new class extends Component {
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
-            <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Altura Puente <span
+            <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Puente <span
                     class="text-blue-500">(cm)</span></label>
             <input type="number" wire:model.blur="altoPuente" oninput="if(this.value < 0) this.value = 1;"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-amber-500 outline-none">
@@ -678,58 +732,60 @@ new class extends Component {
                 </span>
             </div>
 
-            <div class="relative mx-auto mt-4 mb-12" style="width: 90%; max-width: 700px; height: 350px;">
+            <div class="relative mx-auto mt-4 mb-12 w-[90%] max-w-[700px] h-[200px] lg:h-[350px]">
 
-                <div class="absolute top-0 flex items-center justify-center h-full -left-14">
+                <div class="absolute top-0 flex items-center justify-center -left-4 h-full lg:-left-14">
                     <div class="w-[2px] h-full relative bg-blue-400">
                         <div class="absolute -top-1 -left-[4px] text-[10px] text-blue-400">▲</div>
                         <div class="absolute -bottom-1 -left-[4px] text-[10px] text-blue-400">▼</div>
                         <div class="absolute inset-0 flex items-center justify-center">
                             <div
-                                class="-rotate-45 bg-gray-50 px-2 text-[14px] font-bold text-gray-600 border border-slate-200 rounded whitespace-nowrap">
+                                class="-rotate-45 bg-gray-50 px-2 lg:text-[14px] text-[10px] font-bold text-gray-600 border border-slate-200 rounded whitespace-nowrap">
                                 {{ $alto, 165 }} cm
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="absolute bottom-0 flex items-center justify-center -right-14"
+                <div class="absolute bottom-0 flex items-center justify-center -right-4 lg:-right-14"
                     style="height: {{ ($this->altoInf / $alto) * 100 }}%;">
                     <div class="w-[2px] h-full relative bg-amber-500">
                         <div class="absolute -top-1 -left-[4px] text-[10px] text-amber-500">▲</div>
                         <div class="absolute -bottom-1 -left-[4px] text-[10px] text-amber-500">▼</div>
                         <div class="absolute inset-0 flex items-center justify-center">
                             <div
-                                class="-rotate-45 bg-gray-50 px-2 text-[14px] font-bold text-gray-600 border border-slate-200 rounded whitespace-nowrap">
+                                class="-rotate-45 bg-gray-50 px-2 lg:text-[14px] text-[10px] font-bold text-gray-600 border border-slate-200 rounded whitespace-nowrap">
                                 {{ $this->altoInf, 130 }} cm
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="absolute -bottom-12 left-0 w-full flex justify-center h-4">
+                <div class="absolute -bottom-8 lg:-bottom-12 left-0 w-full flex justify-center h-4">
                     <div class="w-full h-[2px] relative bg-slate-400">
                         <div class="absolute -left-1 -top-[5px] text-[10px] text-slate-400">◀</div>
                         <div class="absolute -right-1 -top-[5px] text-[10px] text-slate-400">▶</div>
                         <div class="absolute inset-0 flex items-center justify-center">
                             <div
-                                class="bg-gray-50 px-3 text-[14px] font-bold text-gray-600 border border-slate-200 rounded">
-                                Ancho: {{ $ancho, 205 }} cm
+                                class="bg-gray-50 px-3 lg:text-[14px] text-[10px] font-bold text-gray-600 border border-slate-200 rounded">
+                                {{ $ancho, 205 }} cm
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="plano-2d"
-                    class="w-full h-full border-[8px] border-gray-900 bg-gray-800 relative flex flex-col shadow-inner overflow-hidden">
+                    class="w-full h-full border-[2px] lg:border-[8px] border-gray-900 bg-gray-800 relative flex flex-col shadow-inner overflow-hidden">
                     @if ($this->altoSup > 0)
-                        <div class="w-full flex border-b-[6px] border-gray-900"
+                        <div class="w-full flex lg:border-b-[6px] border-b-[2px] border-gray-900"
                             style="height: {{ ($this->altoSup / $alto) * 100 }}%;">
                             @foreach ($this->sobreluzPartes as $parte)
                                 <div
-                                    class="flex-1 border-r-[4px] border-gray-900 bg-sky-100 relative flex flex-col items-center justify-center">
-                                    <span class="text-[9px] font-black text-blue-800">{{ $parte['label'] }}</span>
-                                    <span class="text-[10px] font-mono font-black text-blue-900">{{ $parte['ancho'] }}
+                                    class="flex-1 lg:border-r-[4px] border-r-[2px] border-gray-900 bg-sky-100 relative flex flex-col items-center justify-center">
+                                    <span
+                                        class="lg:text-[9px] text-[8px] font-black text-blue-800">{{ $parte['label'] }}</span>
+                                    <span
+                                        class="lg:text-[10px] text-[9px] font-mono font-black text-blue-900">{{ $parte['ancho'] }}
                                         x
                                         {{ $parte['alto'] }}</span>
                                 </div>
@@ -741,14 +797,16 @@ new class extends Component {
                         style="height: {{ ($this->altoInf / $alto) * 100 }}%;">
                         @foreach ($this->medidasBloques as $i => $mod)
                             <div
-                                class="flex-1 border-r-[6px] border-gray-900 relative flex flex-col items-center justify-center {{ $mod['tipo'] === 'C' ? 'bg-sky-200' : 'bg-sky-50' }}">
+                                class="flex-1 border-r-[2px] lg:border-r-[6px] border-gray-900 relative flex flex-col items-center justify-center {{ $mod['tipo'] === 'C' ? 'bg-sky-200' : 'bg-sky-50' }}">
                                 <div
                                     class="absolute top-3 left-3 px-2 py-0.5 text-[10px] font-black {{ $mod['tipo'] === 'C' ? 'bg-yellow-400 text-yellow-900' : 'bg-green-600 text-white' }}">
                                     {{ $mod['tipo'] }}{{ $i + 1 }}
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-[10px] font-black text-blue-800 uppercase">Vidrio</p>
-                                    <span class="text-[11px] font-mono font-black text-blue-950">{{ $mod['ancho'] }} x
+                                    <p class="lg:text-[10px] text-[8px] font-black text-blue-800 uppercase">Vidrio</p>
+                                    <span
+                                        class="lg:text-[11px] text-[9px] font-mono font-black text-blue-950">{{ $mod['ancho'] }}
+                                        x
                                         {{ $mod['alto'] }}</span>
                                 </div>
 
@@ -763,7 +821,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <div class="w-full  mt-10 p-6 bg-white rounded-2xl border border-dashed border-slate-300">
+            <div class="w-full  mt-10 p-2 lg:p-6 bg-white rounded-2xl border border-dashed border-slate-300">
                 <h4
                     class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-layer-group"></i> Mapeo de Componentes
@@ -816,25 +874,25 @@ new class extends Component {
     </div>
 
     <div
-        class="p-6 mt-10 transition-all duration-300 border shadow-2xl bg-slate-50/50 rounded-3xl border-slate-200/60 backdrop-blur-sm">
+        class="lg:p-6 p-2 mt-4 lg:mt-10 transition-all duration-300 border shadow-2xl bg-slate-50/50 rounded-3xl border-slate-200/60 backdrop-blur-sm">
 
         <div class="flex items-center gap-3 mb-8">
             <div
                 class="flex items-center justify-center w-10 h-10 text-white shadow-lg bg-gradient-to-br bg-blue-600 to-indigo-700 rounded-xl">
                 <i class="fa-solid fa-list-check text-sm"></i>
             </div>
-            <h2 class="text-2xl font-black tracking-tight text-slate-800">Resumen detallado</h2>
+            <h2 class="lg:text-2xl text-md font-black tracking-tight text-slate-800">Resumen detallado</h2>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 mb-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 lg:gap-6 gap-2 lg:mb-10 mb-4 sm:grid-cols-2">
 
             <div
-                class="relative p-5 overflow-hidden transition-transform bg-white border border-blue-100 shadow-sm group hover:-translate-y-1 rounded-2xl">
+                class="relative p-2 lg:p-5 overflow-hidden transition-transform bg-white border border-blue-100 shadow-sm group hover:-translate-y-1 rounded-2xl">
                 <div
                     class="absolute top-0 right-0 w-16 h-16 -mr-6 -mt-6 transition-transform group-hover:scale-110 opacity-10 bg-blue-600 rounded-full">
                 </div>
                 <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Ancho Ajustado</p>
-                <p class="text-3xl font-black text-slate-800">{{ $this->anchoAjustado }} <span
+                <p class="lg:text-3xl text-xl font-black text-slate-800">{{ $this->anchoAjustado }} <span
                         class="text-sm font-medium text-slate-400">cm</span></p>
             </div>
 
@@ -853,8 +911,8 @@ new class extends Component {
                 <div
                     class="absolute top-0 right-0 w-16 h-16 -mr-6 -mt-6 transition-transform group-hover:scale-110 opacity-10 bg-indigo-600 rounded-full">
                 </div>
-                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Hojas Totales</p>
-                <p class="text-3xl font-black text-slate-800">{{ $this->divisionesInferiores }} <span
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Seguros</p>
+                <p class="text-3xl font-black text-slate-800">{{ $this->accesorios['pestillos'] }} <span
                         class="text-sm font-medium text-slate-400">und</span></p>
             </div>
 
@@ -863,54 +921,61 @@ new class extends Component {
                 <div
                     class="absolute top-0 right-0 w-16 h-16 -mr-6 -mt-6 transition-transform group-hover:scale-110 opacity-10 bg-emerald-500 rounded-full">
                 </div>
-                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Accesorios (G)</p>
+                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Garruchas</p>
                 <p class="text-3xl font-black text-slate-800">{{ $this->accesorios['garruchas'] }} <span
                         class="text-sm font-medium text-slate-400">und</span></p>
             </div>
         </div>
 
-        <div class="overflow-hidden bg-white border shadow-sm border-slate-200 rounded-2xl">
+        <div class="overflow-hidden scroll-auto bg-white border shadow-sm border-slate-200 rounded-2xl">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest">Detalle
+                        <th
+                            class="lg:px-6 px-2 lg:py-4 py-2 lg:text-[11px] text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                            Detalle
                             del Perfil / Accesorio</th>
                         <th
-                            class="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">
+                            class="lg:px-6 px-2 lg:py-4 py-2 lg:text-[11px] text-[8px] font-black text-slate-500 uppercase tracking-widest text-center">
                             Medida</th>
                         <th
-                            class="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">
+                            class="lg:px-6 px-2 lg:py-4 py-2 lg:text-[11px] text-[8px] font-black text-slate-500 uppercase tracking-widest text-center">
                             Cant.</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y w-full divide-slate-100">
                     @foreach ($this->detalleModulos as $item)
                         @php
                             $codigoBuscado = $item['label'];
                             $nombreProductoExcel = 'Perfil no identificado';
+
                             foreach ($this->data as $nombreCompleto) {
-                                if (str_contains($nombreCompleto, $codigoBuscado)) {
+                                if (str_contains((string) $nombreCompleto, (string) $codigoBuscado)) {
                                     $nombreProductoExcel = $nombreCompleto;
                                     break;
                                 }
                             }
+                            if ($codigoBuscado === '8115' && isset($item['tipo'])) {
+                                $nombreProductoExcel .= ' - ' . $item['tipo'];
+                            }
                         @endphp
+
                         <tr class="transition-colors hover:bg-blue-50/30 group">
-                            <td class="px-6 py-4">
+                            <td class="lg:px-6 px-2 lg:py-4 py-2">
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-sm font-bold text-slate-700 group-hover:text-blue-700 transition-colors">{{ $nombreProductoExcel }}</span>
-                                    <span class="text-[10px] font-mono font-bold text-slate-400">COD:
+                                        class="lg:text-sm text-xs font-bold text-slate-700 group-hover:text-blue-700 transition-colors">{{ $nombreProductoExcel }}</span>
+                                    <span class="lg:text-[10px] text-[8px] font-mono font-bold text-slate-400">COD:
                                         {{ $codigoBuscado }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="lg:px-6 px-3 lg:py-4 py-2 text-center">
                                 <span
-                                    class="inline-flex items-center px-3 py-1 text-sm font-black text-blue-700 rounded-full bg-blue-50">
+                                    class="inline-flex items-center px-3 py-1 lg:text-sm text-xs font-black text-blue-700 rounded-md lg:rounded-full bg-blue-50">
                                     {{ $item['alto'] }} cm
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="lg:px-6 px-4 lg:py-4 py-2 text-center">
                                 <span
                                     class="inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
                                     {{ $item['cantidad'] }}

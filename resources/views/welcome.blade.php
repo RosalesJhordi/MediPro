@@ -172,7 +172,7 @@
         <div class="particle bottom-1/4 left-1/2" style="animation-delay: 2s;"></div>
     </div>
 
-    <div class="relative max-w-lg px-6 text-center">
+    <div class="relative w-full lg:max-w-xl px-4 lg:px-6 text-center">
 
         <div class="flex justify-center mb-6">
             <div
@@ -182,7 +182,7 @@
                         class="absolute inline-flex w-full h-full bg-blue-400 rounded-full opacity-75 animate-ping"></span>
                     <span class="relative inline-flex w-2 h-2 bg-blue-500 rounded-full"></span>
                 </span>
-                <span class="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">MediPro v0.1</span>
+                <span class="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">MediPro v1.0</span>
             </div>
         </div>
 
@@ -190,29 +190,29 @@
             <span class="inline-block w-12 h-1 bg-blue-500 rounded-full opacity-50"></span>
         </div>
 
-        <h1 class="pb-2 text-6xl font-black tracking-tighter md:text-7xl text-gradient">
+        <h1 class="pb-2 text-5xl font-black tracking-tighter lg:text-7xl text-gradient">
             Bienvenido
         </h1>
 
-        <p class="mt-4 text-xl md:text-2xl font-light text-gray-500 tracking-wide uppercase text-[0.9rem]">
+        <p class="mt-4 text-md lg:text-xl md:text-2xl font-light text-gray-500 tracking-wide uppercase text-[0.9rem]">
             ¿Qué desea realizar <span class="font-bold text-gray-700">hoy</span>?
         </p>
 
-        <div class="flex items-center justify-center w-full gap-6 p-4 mt-6">
+        <div class="flex items-center justify-center w-full  gap-6 p-2 lg:p-4 mt-6">
 
             <a href="Ventana" wire:navigate
-                class="flex flex-col items-center justify-center w-40 h-40 p-4 space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                class="flex flex-col items-center justify-center w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
                 <div
-                    class="p-4 rounded-2xl bg-gradient-to-tr bg-green-400 to-emerald-600 text-white shadow-[0_10px_20px_rgba(16,185,129,0.2)]">
+                    class="p-3 lg:p-4 rounded-2xl bg-gradient-to-tr bg-green-400 to-emerald-600 text-white shadow-[0_10px_20px_rgba(16,185,129,0.2)]">
                     <img src="{{ asset('img/ventana.svg') }}" class="w-10 h-10 " alt="Ventana">
                 </div>
                 <span class="text-sm font-bold text-gray-700">Ventana</span>
             </a>
 
             <a href="Puerta" wire:navigate
-                class="flex flex-col items-center justify-center w-40 h-40 p-4 space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                class="flex flex-col items-center justify-center w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
                 <div
-                    class="p-4 rounded-2xl bg-gradient-to-tr bg-orange-400 to-red-600 text-white shadow-[0_10px_20px_rgba(239,68,68,0.2)]">
+                    class=" p-3 lg:p-4 rounded-2xl bg-gradient-to-tr bg-orange-400 to-red-600 text-white shadow-[0_10px_20px_rgba(239,68,68,0.2)]">
                     <img src="{{ asset('img/puerta.svg') }}" class="w-10 h-10" alt="Puerta">
                 </div>
                 <span class="text-sm font-bold text-gray-700">Puerta</span>

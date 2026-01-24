@@ -19,3 +19,8 @@ Route::get('/plano-imprimir', function () {
     // dd($datos);
     return view('planos2d', compact('datos'));
 })->name('plano.imprimir');
+
+//RUTA A AOPTIMIZADOR
+Route::get('/optimizador', function () {
+    return view('Opti');
+})->name('optimizador');

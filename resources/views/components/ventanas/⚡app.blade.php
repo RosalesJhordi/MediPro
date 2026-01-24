@@ -66,7 +66,7 @@ new class extends Component {
         {{-- GRID DE SISTEMAS --}}
         @if (!$sistemaSeleccionado)
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+            <div class="grid lg:grid-cols-3 grid-cols-2 gap-2 lg:gap-8 animate-fade-in">
                 @php
                     $sistemas = [
                         [
@@ -104,14 +104,14 @@ new class extends Component {
 
                 @foreach ($sistemas as $s)
                     <button wire:click="seleccionar('{{ $s['id'] }}')"
-                        class="group p-6 bg-white/60 backdrop-blur-md border-2 border-transparent rounded-3xl shadow-sm transition-all duration-300 hover:border-blue-500 hover:bg-white/80 flex flex-col justify-between text-center">
+                        class="group lg:p-6 p-2 bg-white/60 backdrop-blur-md border-2 border-transparent rounded-3xl shadow-sm transition-all duration-300 hover:border-blue-500 hover:bg-white/80 flex flex-col justify-between text-center">
                         <div>
                             <div
                                 class="w-16 h-16 bg-{{ $s['color'] }}-100 text-{{ $s['color'] }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                 <i class="fa-solid {{ $s['icon'] }} text-2xl"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-800">{{ $s['id'] }}</h3>
-                            <p class="text-sm text-gray-500 mt-2">{{ $s['desc'] }}</p>
+                            <h3 class="lg:text-xl text-md font-bold text-gray-800">{{ $s['id'] }}</h3>
+                            <p class="text-xs lg:text-sm text-gray-500 mt-2">{{ $s['desc'] }}</p>
                         </div>
                     </button>
                 @endforeach
