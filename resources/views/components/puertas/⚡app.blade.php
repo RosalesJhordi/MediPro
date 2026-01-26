@@ -4,7 +4,6 @@ use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
 
 new class extends Component {
-
     public int $material = 7852;
     public float $anchoTotal = 90;
     public float $altoTotal = 220;
@@ -62,7 +61,8 @@ new class extends Component {
             'material' => $this->material,
             'anchoTotal' => $this->anchoTotal,
             'altoTotal' => $this->altoTotal,
-            'color' => $this->color,
+            'conSobreluz' => $this->conSobreluz,
+            'altoSobreluz' => $this->altoSobreluz,
             'datos' => $this->datos,
         ];
     }
@@ -106,7 +106,8 @@ new class extends Component {
         $this->material = $p['material'];
         $this->anchoTotal = $p['anchoTotal'];
         $this->altoTotal = $p['altoTotal'];
-        $this->color = $p['color'];
+        $this->conSobreluz = $p['conSobreluz'] ?? false;
+        $this->altoSobreluz = $p['altoSobreluz'] ?? 30;
         $this->datos = $p['datos'] ?? [];
     }
 
@@ -215,16 +216,12 @@ new class extends Component {
         // Marco sobreluz
         $ancho = $this->anchoTotal - $perfil * 2;
 
-        $this->datos["{$codigo} - Sobreluz Arriba"] = [
-            'medida' => $ancho,
-            'cantidad' => 1,
-        ];
+        // $this->datos["{$codigo} - Sobreluz"] = [
+        //     'medida' => $ancho,
+        //     'cantidad' => 1,
+        // ];
 
-        // 🔴 DESCUENTOS REALES DEL PUENTE
-        $altoVidrio =
-            $this->altoSobreluz -
-            $perfil - // solo UN perfil arriba
-            0.5; // holgura vidrio
+        $altoVidrio = $this->altoSobreluz - $perfil - 0.5;
 
         $this->datos['Vidrio Sobreluz'] = [
             'medida' => number_format($altoVidrio, 2) . ' x ' . number_format($ancho - 0.5, 2),
@@ -262,7 +259,6 @@ new class extends Component {
         ];
     }
 
-
     public function procesarPerfiles()
     {
         $ruta = public_path('datos.xlsx');
@@ -282,7 +278,7 @@ new class extends Component {
 
         session()->put('puertas', $this->puertas);
         $datos = session('puertas', []);
-        dd($datos);
+        // dd($datos);
         $this->dispatch('imprimir-puertas');
     }
     protected $listeners = ['limpiar-puertas'];
@@ -368,8 +364,8 @@ new class extends Component {
     </div>
 
     {{-- FORM --}}
-    <div class="grid gap-4 p-4 mb-6
-            grid-cols-3 lg:grid-cols-4">
+    <div class="grid gap-4 p-4 mb-4 lg:mb-6
+            grid-cols-3 lg:grid-cols-4 flex-wrap">
 
         {{-- ANCHO --}}
         <div class="flex flex-col gap-1">
@@ -455,8 +451,8 @@ new class extends Component {
             </span>
 
             {{-- CONTENEDOR GENERAL --}}
-            <div class="relative w-[280px]
-        {{ $conSobreluz ? 'h-[600px]' : 'h-[520px]' }}
+            <div class="relative w-[220px] lg:w-[280px]
+        {{ $conSobreluz ? ' h-[500px] lg:h-[600px]' : 'h-[450px] lg:h-[520px]' }}
         border-[8px] shadow-xl ring-1 ring-black/10
         flex flex-col bg-white"
                 style="border-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}">
@@ -495,7 +491,7 @@ new class extends Component {
 
                     {{-- VIDRIO SUPERIOR --}}
                     <div
-                        class="flex-1 bg-sky-200/50 border border-sky-300
+                        class="flex-1 bg-sky-200/50 border-black border-2
                 flex flex-col items-center justify-center shadow-inner">
 
                         <span class="text-[10px] font-black uppercase text-sky-800">
@@ -515,7 +511,7 @@ new class extends Component {
                         <span class="font-bold">REF 5227</span>
                         <div class="flex items-center gap-2">
                             <span class="font-mono">
-                                {{ $datos['5227 - Travesaño']['medida'] ?? '—' }} cm
+                                {{ $datos['5227']['medida'] ?? '—' }} cm
                             </span>
                             <div
                                 class="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center bg-gray-400/20">
@@ -531,7 +527,7 @@ new class extends Component {
                     </div>
                     {{-- VIDRIO INFERIOR --}}
                     <div
-                        class="flex-1 bg-sky-200/50 border border-sky-300
+                        class="flex-1 bg-sky-200/50 border-black border-2
                 flex flex-col items-center justify-center shadow-inner">
 
                         <span class="text-[10px] font-black uppercase text-sky-800">
@@ -553,47 +549,123 @@ new class extends Component {
             </div>
         </div>
 
+        {{-- TABLA ACCESORIOS --}}
+        <div
+            class="w-full lg:w-1/2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6 lg:mt-0">
 
-
-        {{-- TABLA --}}
-        <div class="w-full lg:w-1/2 bg-white rounded-2xl border shadow-sm overflow-hidden mt-6 lg:mt-0">
-
-            <div class="bg-gray-50 px-5 py-4 border-b font-bold flex items-center gap-2">
-                <i class="fa-solid fa-toolbox text-blue-600"></i>
-                Accesorios
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 bg-blue-600 text-white">
+                <div class="flex items-center gap-2 font-semibold">
+                    <i class="fa-solid fa-toolbox"></i>
+                    Accesorios
+                </div>
+                <span class="text-xs bg-blue-500 px-3 py-1 rounded-full">
+                    {{ count($datos) }} items
+                </span>
             </div>
 
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
-                    <tr>
-                        <th class="px-6 py-3 text-left">Perfil</th>
-                        <th class="px-6 py-3 text-center">Medida</th>
-                        <th class="px-6 py-3 text-right">Cant.</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    @forelse($datos as $nombre => $item)
-                        <tr class="hover:bg-blue-50/30">
-                            <td class="px-6 py-4 font-semibold text-slate-700">
-                                {{ $nombre }}
-                            </td>
-                            <td class="px-6 py-4 text-center font-mono">
-                                {{ $item['medida'] }}
-                            </td>
-                            <td class="px-6 py-4 text-right font-black tabular-nums">
-                                {{ $item['cantidad'] }}
-                            </td>
-                        </tr>
-                    @empty
+            <!-- Tabla -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-blue-50 text-blue-700 text-xs uppercase">
                         <tr>
-                            <td colspan="3" class="text-center py-12 text-gray-400 italic">
-                                No hay datos calculados
-                            </td>
+                            <th class="px-6 py-3 text-left">Perfil</th>
+                            <th class="px-6 py-3 text-center">Medida</th>
+                            <th class="px-6 py-3 text-right">Cant.</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-200 text-xs">
+                        @forelse($datos as $nombre => $item)
+                            @if (str_starts_with($nombre, 'Vidrio'))
+                                @continue
+                            @endif
+                            @php
+                                // Extraer código desde el nombre del perfil
+                                preg_match('/^\d+/', $nombre, $m);
+                                $codigoBuscado = $m[0] ?? null;
+
+                                // Valor por defecto
+                                $nombreProductoExcel = $nombre;
+
+                                // Buscar coincidencia en Excel
+                                if ($codigoBuscado) {
+                                    foreach ($data ?? [] as $nombreCompleto) {
+                                        if (str_contains((string) $nombreCompleto, (string) $codigoBuscado)) {
+                                            $nombreProductoExcel = $nombreCompleto;
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp
+
+
+                            <tr class="hover:bg-blue-50 transition">
+
+                                {{-- PERFIL CALCULADO --}}
+                                <td class="px-6 py-4 font-medium text-slate-700">
+                                    {{ $nombreProductoExcel }}
+                                </td>
+
+                                {{-- MEDIDA --}}
+                                <td class="px-6 py-4 text-center">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full
+                   bg-indigo-100 text-indigo-700 font-mono text-xs">
+                                        {{ $item['medida'] }}
+                                    </span>
+                                </td>
+
+                                {{-- CANTIDAD --}}
+                                <td class="px-6 py-4 text-right">
+                                    <span
+                                        class="inline-flex items-center justify-center min-w-[3rem]
+                   px-3 py-1 rounded-full
+                   bg-emerald-100 text-emerald-700 font-bold tabular-nums">
+                                        {{ $item['cantidad'] }}
+                                    </span>
+                                </td>
+
+                                {{-- NOMBRE DESDE EXCEL --}}
+                                {{-- <td class="px-6 py-4">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+            {{ $nombreProductoExcel === 'Perfil no identificado' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+                                        {{ $nombreProductoExcel }}
+                                    </span>
+                                </td> --}}
+
+                            </tr>
+
+                        @empty
+                            <tr>
+                                <td colspan="3" class="py-14 text-center text-slate-400 italic">
+                                    No hay datos calculados
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <script>
+            window.rutaPuertasImprimir = @json(route('puertas.imprimir'));
+        </script>
+
+        <iframe id="iframePuertas" class="hidden"></iframe>
+
+        <script>
+            window.addEventListener('imprimir-puertas', () => {
+                const iframe = document.getElementById('iframePuertas');
+                iframe.src = window.rutaPuertasImprimir + '?t=' + Date.now();
+
+                iframe.onload = () => {
+                    setTimeout(() => iframe.contentWindow.print(), 600);
+                };
+            });
+        </script>
+
     </div>
 
     {{-- ESTILOS --}}
@@ -606,12 +678,4 @@ new class extends Component {
             background: #f3f4f6;
         }
     </style>
-
-    <script>
-        function imprimirProyecto() {
-            Livewire.dispatch('preparar-impresion');
-            window.print();
-        }
-    </script>
-
 </div>

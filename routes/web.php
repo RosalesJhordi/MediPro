@@ -20,6 +20,14 @@ Route::get('/plano-imprimir', function () {
     return view('planos2d', compact('datos'));
 })->name('plano.imprimir');
 
+
+Route::get('/puertas-imprimir', function () {
+    $datos = session('puertas', []);
+    // dd($datos);
+    return view('planos2dPuerta', compact('datos'));
+})->name('puertas.imprimir');
+
+
 //RUTA A AOPTIMIZADOR
 Route::get('/optimizador', function () {
     return view('Opti');
