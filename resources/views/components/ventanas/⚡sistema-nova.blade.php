@@ -37,7 +37,7 @@ new class extends Component {
     protected float $sobreluz = 2.1;
     protected float $sbancho = 0.3;
     protected float $vfijo = 1.0;
-    protected float $vcorrediza = 2.5;
+    protected float $vcorrediza = 3.5;
 
     /* ===============================
      |  CICLO DE VIDA
@@ -45,6 +45,7 @@ new class extends Component {
     public function mount()
     {
         $this->procesarPerfiles();
+        $this->guardarVentanaActual();
 
         // Cargar ventanas desde sesión si existen (V3)
         $this->ventanas = session('ventanas', [
@@ -257,6 +258,8 @@ new class extends Component {
 
         $this->ventanaActiva = count($this->ventanas) - 1;
         $this->cargarVentanaActiva();
+
+        $this->dispatch('correcto','Vista agregada con exito');
     }
 
     // V3: Guardado automático en sesión
@@ -547,54 +550,7 @@ new class extends Component {
 
         // Guardar en sesión
         session()->put('ventanas', $this->ventanas);
-    }
-
-    //opti
-    public function optimizar()
-    {
-        $ventanasCompletas = [];
-
-        foreach ($this->ventanas as $v) {
-            $anchoAjustado = $this->calcularAnchoAjustado($v['ancho'], $v['numCorredizas'], $v['numFijos']);
-
-            $altoInf = $v['altoPuente'];
-            $altoSup = max(0, $v['alto'] - $v['altoPuente']);
-
-            $ventanasCompletas[] = [
-                // ================== IDENTIDAD ==================
-                'nombre' => $v['nombre'],
-
-                // ================== MEDIDAS BASE ==================
-                'ancho' => (float) $v['ancho'],
-                'alto' => (float) $v['alto'],
-                'altoPuente' => (float) $v['altoPuente'],
-                'anchoAjustado' => $anchoAjustado,
-
-                // ================== CONFIGURACIÓN ==================
-                'numCorredizas' => (int) $v['numCorredizas'],
-                'numFijos' => (int) $v['numFijos'],
-
-                // ================== ALTURAS ==================
-                'altoInf' => $altoInf,
-                'altoSup' => $altoSup,
-
-                // ================== VIDRIOS ==================
-                // bloques = vidrios principales
-                'bloques' => $this->calcularMedidasBloques($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
-
-                // sobreluz = tragaluz / vidrios superiores
-                'sobreluz' => $this->calcularSobreluz($v['ancho'], $v['alto'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
-
-                // ================== ALUMINIOS ==================
-                'detalle' => $this->calcularDetalleModulos($v['ancho'], $v['altoPuente'], $v['numCorredizas'], $v['numFijos']),
-
-                // ================== CATÁLOGO ==================
-                'catalogo' => $this->data,
-            ];
-        }
-
-        session()->put('datos_lote', $ventanasCompletas);
-        return redirect()->route('optimizador');
+        $this->dispatch('delete','Vista eliminada con exito');
     }
 };
 
@@ -642,14 +598,10 @@ new class extends Component {
             </button>
         </div>
         <div class="flex gap-2">
-            <button wire:click='optimizar' wire:navigate
-                class="px-6 py-2 bg-orange-600 text-white text-xs font-black rounded-xl hover:bg-orange-700 transition-all flex items-center gap-2">
-                <i class="fa-solid fa-scissors"></i> Optimizar
-            </button>
 
             <button wire:click="imprimirTodo"
                 class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2">
-                <i class="fa-solid fa-file-pdf"></i> IMPRIMIR PROYECTO
+                <i class="fa-solid fa-file-pdf"></i> IMPRIMIR
             </button>
         </div>
 
@@ -677,13 +629,13 @@ new class extends Component {
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Corredizas</label>
-            <input type="number" wire:model.blur="numCorredizas" min="1"
-                oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.blur="numCorredizas" min="1" max="3"
+                oninput="if(this.value < 1) this.value = 1; if(this.value > 3) this.value = 3;"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Fijos</label>
-            <input type="number" wire:model.blur="numFijos" min="1" oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.blur="numFijos" min="1" max="3" oninput="if(this.value < 1) this.value = 1; if(this.value > 3) this.value = 3;"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
     </div>
@@ -691,12 +643,12 @@ new class extends Component {
     <div
         class="flex flex-col items-center justify-center p-4 border border-gray-200 shadow-inner bg-gray-50 md:p-6 rounded-3xl">
 
-        <iframe id="iframeLote" src="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
+        <iframe id="iframeLote" data-url="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
 
         <script>
             window.addEventListener('disparar-impresion-total', () => {
                 const iframe = document.getElementById('iframeLote');
-                iframe.src = "{{ route('plano.imprimir') }}";
+                iframe.src = iframe.dataset.url;
 
                 iframe.onload = function() {
 
@@ -990,18 +942,39 @@ new class extends Component {
 
     <div wire:loading class="fixed inset-0 z-50 bg-gray-500/50">
         <div class="absolute inset-0 flex items-center justify-center">
-            <div role="status">
-                <svg aria-hidden="true" class="w-16 h-16 text-gray-200 animate-spin fill-blue-600"
-                    viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                        fill="currentColor" />
-                    <path
-                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0872 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                        fill="currentFill" />
-                </svg>
-                <span class="sr-only">Cargando...</span>
-            </div>
+            <img src="{{ asset('img/tape.gif') }}" alt="" srcset="" class="rounded-full w-40 h-40">
         </div>
     </div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
 </div>
+<script>
+    window.addEventListener('correcto', () => {
+        iziToast.success({
+            message: event.detail,
+            position: 'topRight',
+            timeout: 5000,
+            progressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+            transitionIn: 'bounce',
+            zindex: 999999
+        });
+    });
+    window.addEventListener('delete', () => {
+        iziToast.info({
+            message: event.detail,
+            position: 'topRight',
+            timeout: 5000,
+            progressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+            transitionIn: 'bounce',
+            zindex: 999999
+        });
+    });
+</script>

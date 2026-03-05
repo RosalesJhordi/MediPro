@@ -39,6 +39,13 @@
             animation: floating 3s ease-in-out infinite;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastjs-notifications@latest/dist/toast-notifications.min.js"></script>
+    <!-- CSS (si usa estilos propios) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.css">
+
+<!-- JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.js"></script>
 </head>
 
 <body class="bg-gray-100 h-screen relative">

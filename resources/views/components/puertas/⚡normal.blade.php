@@ -1,496 +1,703 @@
 <?php
 
 use Livewire\Component;
+use Maatwebsite\Excel\Facades\Excel;
 
-new class extends Component
-{
-    //
+new class extends Component {
+    public int $material = 7852;
+    public float $anchoTotal = 90;
+    public float $altoTotal = 220;
+    public string $color = 'negro';
+
+    public float $tubo = 2.5;
+    public float $canal = 2.2;
+    public float $cuadrado = 3.8;
+    public float $paflon = 8.2;
+    public float $luzArriba = 0.5;
+    public float $luzAbajo = 1;
+    public float $luzLados = 0.6;
+
+    public array $datos = [];
+    public array $data = [];
+
+    public array $puertas = [];
+    public int $puertaActiva = 0;
+
+    public function mount()
+    {
+        $this->procesarPerfiles();
+
+        // 👉 cargar desde sesión si existe
+        if (session()->has('puertas')) {
+            $this->puertas = session('puertas');
+            $this->puertaActiva = 0;
+            $this->cargarPuertaActiva();
+        } else {
+            $this->puertas = [array_merge(['nombre' => 'P - 1'], $this->snapshotPuerta())];
+            $this->puertaActiva = 0;
+            $this->recalcular();
+        }
+    }
+    public function eliminarPuerta(int $index): void
+    {
+        if (count($this->puertas) <= 1) {
+            return; // siempre debe quedar una
+        }
+
+        unset($this->puertas[$index]);
+        $this->puertas = array_values($this->puertas);
+
+        if ($this->puertaActiva >= count($this->puertas)) {
+            $this->puertaActiva = count($this->puertas) - 1;
+        }
+
+        $this->cargarPuertaActiva();
+        session()->put('puertas', $this->puertas);
+        $this->dispatch('delete', 'Vista eliminada con exito');
+    }
+
+    private function snapshotPuerta(): array
+    {
+        return [
+            'material' => $this->material,
+            'anchoTotal' => $this->anchoTotal,
+            'altoTotal' => $this->altoTotal,
+            'conSobreluz' => $this->conSobreluz,
+            'altoSobreluz' => $this->altoSobreluz,
+            'datos' => $this->datos,
+        ];
+    }
+
+    private function guardarPuertaActual(): void
+    {
+        if (!isset($this->puertas[$this->puertaActiva])) {
+            return;
+        }
+
+        $this->puertas[$this->puertaActiva] = array_merge(['nombre' => $this->puertas[$this->puertaActiva]['nombre']], $this->snapshotPuerta());
+
+        session()->put('puertas', $this->puertas);
+    }
+
+    private function cargarPuerta(int $i): void
+    {
+        $p = $this->puertas[$i];
+
+        $this->material = $p['material'];
+        $this->anchoTotal = $p['anchoTotal'];
+        $this->altoTotal = $p['altoTotal'];
+        $this->color = $p['color'];
+
+        $this->recalcular();
+    }
+    public function cambiarPuerta(int $i): void
+    {
+        $this->guardarPuertaActual();
+        $this->puertaActiva = $i;
+        $this->cargarPuertaActiva();
+    }
+    private function cargarPuertaActiva(): void
+    {
+        if (!isset($this->puertas[$this->puertaActiva])) {
+            return;
+        }
+
+        $p = $this->puertas[$this->puertaActiva];
+
+        $this->material = $p['material'];
+        $this->anchoTotal = $p['anchoTotal'];
+        $this->altoTotal = $p['altoTotal'];
+        $this->conSobreluz = $p['conSobreluz'] ?? false;
+        $this->altoSobreluz = $p['altoSobreluz'] ?? 30;
+        $this->datos = $p['datos'] ?? [];
+    }
+
+    public function agregarPuerta(): void
+    {
+        $this->guardarPuertaActual();
+
+        $this->material = 7852;
+        $this->anchoTotal = 90;
+        $this->altoTotal = 220;
+        $this->color = 'negro';
+        $this->recalcular();
+
+        $this->puertas[] = array_merge(['nombre' => 'P - ' . (count($this->puertas) + 1)], $this->snapshotPuerta());
+
+        $this->puertaActiva = count($this->puertas) - 1;
+        $this->dispatch('correcto', 'Vista agregada con exito');
+    }
+
+    private function resetPuertas(): void
+    {
+        $this->puertas = [['nombre' => 'P - 1']];
+
+        $this->puertaActiva = 0;
+
+        $this->material = 7852;
+        $this->anchoTotal = 90;
+        $this->altoTotal = 220;
+        $this->color = 'negro';
+        $this->datos = [];
+
+        $this->recalcular();
+    }
+
+    public function updated($prop)
+    {
+        $this->guardarPuertaActual();
+
+        session()->put('puertas', $this->puertas);
+        if (in_array($prop, ['material', 'anchoTotal', 'altoTotal', 'conSobreluz', 'altoSobreluz'])) {
+            $this->recalcular();
+            $this->guardarPuertaActual();
+        }
+    }
+    private function calcularMarco(float $perfil, int $codigo): void
+    {
+        $this->datos["{$codigo} - Lados"] = [
+            'medida' => $this->altoTotal,
+            'cantidad' => 2,
+        ];
+
+        $this->datos["{$codigo} - Arriba"] = [
+            'medida' => $this->anchoTotal - $perfil * 2,
+            'cantidad' => $this->conSobreluz ? 2 : 1,
+        ];
+    }
+    private function calcularHoja(float $perfil): void
+    {
+        $altoHoja = $this->conSobreluz ? $this->altoTotal - $this->altoSobreluz : $this->altoTotal;
+
+        $anchoHoja = $this->anchoTotal - $perfil * 2 - $this->luzLados;
+
+        $this->datos['5414 - Arriba y Abajo'] = [
+            'medida' => $anchoHoja - $this->cuadrado * 2,
+            'cantidad' => 2,
+        ];
+
+        $this->datos['5414 - Lados'] = [
+            'medida' => $altoHoja - $this->luzArriba - $this->luzAbajo - $perfil,
+            'cantidad' => 2,
+        ];
+
+        $this->datos['5227 - Travesaño'] = [
+            'medida' => $anchoHoja - $this->cuadrado * 2,
+            'cantidad' => 1,
+        ];
+
+        // dd([
+        //     $altoHoja,
+        //     $this->altoTotal
+        //     ,$this->altoSobreluz,
+        //     $perfil
+
+        //     ]);
+    }
+    private function calcularVidrios(float $perfil): void
+    {
+        $altoHoja = $this->conSobreluz ? $this->altoTotal - $this->altoSobreluz : $this->altoTotal;
+
+        $anchoVidrio = $this->anchoTotal - $perfil * 2 - $this->luzLados - $this->cuadrado * 2;
+
+        $descuentoLuces = $this->luzArriba + $this->luzAbajo;
+        $descuentoMarco = $this->cuadrado * 2;
+        $descuentoCentral = $this->paflon;
+
+        $altoUtil = $altoHoja - $descuentoLuces - $descuentoMarco - $descuentoCentral - $perfil;
+
+        $altoVidrio = $altoUtil / 2;
+
+        $this->datos['Vidrio'] = [
+            'medida' => number_format($altoVidrio - 0.5, 2) . ' x ' . number_format($anchoVidrio - 0.5, 2),
+            'cantidad' => 2,
+        ];
+    }
+    private function calcularSobreluz(float $perfil, int $codigo): void
+    {
+        // Marco sobreluz
+        $ancho = $this->anchoTotal - $perfil * 2;
+
+        // $this->datos["{$codigo} - Sobreluz"] = [
+        //     'medida' => $ancho,
+        //     'cantidad' => 1,
+        // ];
+
+        $altoVidrio = $this->altoSobreluz - $perfil - 0.5;
+
+        $this->datos['Vidrio Sobreluz'] = [
+            'medida' => number_format($altoVidrio, 2) . ' x ' . number_format($ancho - 0.5, 2),
+            'cantidad' => 1,
+        ];
+    }
+
+    private function recalcular(): void
+    {
+        $this->datos = [];
+
+        $perfil = $this->material == 7852 ? $this->tubo : $this->canal;
+        $codigo = $this->material;
+
+        $this->calcularMarco($perfil, $codigo);
+        $this->calcularHoja($perfil);
+        $this->calcularVidrios($perfil);
+
+        if ($this->conSobreluz) {
+            $this->calcularSobreluz($perfil, $codigo);
+        }
+
+        $this->calcularAccesorios();
+    }
+    private function calcularAccesorios(): void
+    {
+        $this->datos['Bisagras'] = [
+            'medida' => '3x3',
+            'cantidad' => 3,
+        ];
+
+        $this->datos['Chapas'] = [
+            'medida' => 'Unidad',
+            'cantidad' => 1,
+        ];
+    }
+
+    public function procesarPerfiles()
+    {
+        $ruta = public_path('datos.xlsx');
+        if (!file_exists($ruta)) {
+            return;
+        }
+
+        $this->data = collect(Excel::toArray([], $ruta)[0])
+            ->pluck(0)
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+    public function imprimirTodo()
+    {
+        $this->guardarPuertaActual();
+
+        session()->put('puertas', $this->puertas);
+        $datos = session('puertas', []);
+        // dd($datos);
+        $this->dispatch('imprimir-puertas');
+    }
+    protected $listeners = ['limpiar-puertas'];
+
+    public function limpiarPuertas(): void
+    {
+        session()->forget('puertas');
+        $this->resetPuertas();
+    }
+
+    public bool $conSobreluz = false;
+    public float $altoSobreluz = 30;
 };
+
 ?>
 
-<div class="bg-slate-50 mt-3 p-4 md:p-8 rounded-3xl border border-slate-200 shadow-inner" x-data="{ vista: 'perfiles' }">
+<div class="p-2 md:p-6 max-w-5xl mx-auto mb-[30px] font-sans">
 
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
-            <div>
-                <h2 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Centro de Corte</h2>
-                <p class="text-slate-500 text-sm font-medium">Optimización de materiales</p>
+    <div wire:loading class="fixed inset-0 z-50 bg-gray-500/50">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <img src="{{ asset('img/tape.gif') }}" alt="" srcset="" class="rounded-full w-40 h-40">
+        </div>
+    </div>
+
+    <div
+        class="lg:flex grid grid-cols-1 lg:gap-2 justify-between items-center gap-1 mb-6 px-2 border-b border-gray-200 overflow-x-auto">
+        <div class="flex flex-wrap items-center gap-2">
+            @foreach ($puertas as $index => $v)
+                <div class="relative group">
+                    <button wire:click="cambiarPuerta({{ $index }})"
+                        class="px-6 py-2 text-xs font-black uppercase tracking-tighter rounded-t-xl border transition-all
+                {{ $puertaActiva == $index
+                    ? 'bg-white border-gray-200 text-blue-600 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]'
+                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200' }}">
+                        <i class="fa-solid fa-door-closed"></i> {{ $v['nombre'] }}
+                    </button>
+
+
+                    <button wire:click.stop="eliminarPuerta({{ $index }})"
+                        class="absolute -top-1 -right-1 w-4 h-4 text-[10px]
+                       bg-red-500 text-white rounded-full
+                       flex items-center justify-center
+                       opacity-0 group-hover:opacity-100 transition">
+                        ✕
+                    </button>
+
+                </div>
+            @endforeach
+
+            <button wire:click="agregarPuerta"
+                class="ml-2 px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg">
+                <i class="fa-solid fa-plus-circle"></i> Nuevo
+            </button>
+
+            <button wire:click="limpiarPuertas"
+                class="ml-2 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg">
+                <i class="fa-solid fa-trash"></i> Vaciar
+            </button>
+        </div>
+
+        <div class="flex gap-2">
+
+            <button wire:click="imprimirTodo()"
+                class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700">
+                <i class="fa-solid fa-file-pdf"></i> IMPRIMIR
+            </button>
+        </div>
+    </div>
+
+    {{-- FORM --}}
+    <div class="grid gap-4 p-4 mb-4 lg:mb-6
+            grid-cols-3 lg:grid-cols-4 flex-wrap">
+
+        {{-- ANCHO --}}
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                Ancho (cm)
+            </label>
+            <input type="text" wire:model.lazy="anchoTotal" placeholder="90"
+                class="w-full rounded-lg border border-gray-300 bg-white
+                   px-3 py-2.5 text-sm font-medium text-gray-900
+                   placeholder-gray-400
+                   transition focus:border-indigo-500
+                   focus:ring-2 focus:ring-indigo-200 focus:outline-none">
+        </div>
+
+        {{-- ALTO --}}
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                Alto (cm)
+            </label>
+            <input type="text" wire:model.lazy="altoTotal" placeholder="220"
+                class="w-full rounded-lg border border-gray-300 bg-white
+                   px-3 py-2.5 text-sm font-medium text-gray-900
+                   placeholder-gray-400
+                   transition focus:border-indigo-500
+                   focus:ring-2 focus:ring-indigo-200 focus:outline-none">
+        </div>
+
+        {{-- MATERIAL --}}
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                Material
+            </label>
+            <select wire:model.live="material"
+                class="w-full rounded-lg border border-gray-300 bg-white
+                   px-3 py-2.5 text-sm font-medium text-gray-900
+                   cursor-pointer
+                   transition focus:border-indigo-500
+                   focus:ring-2 focus:ring-indigo-200 focus:outline-none">
+                <option value="7830">Canal 60 - 7830</option>
+                <option value="7852">Rectangular 60 - 7852</option>
+            </select>
+        </div>
+
+        {{-- ALTO SOBRELUZ --}}
+        @if ($conSobreluz)
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    Alto sobreluz (cm)
+                </label>
+                <input type="text" wire:model.lazy="altoSobreluz" placeholder="40"
+                    class="w-full rounded-lg border border-gray-300 bg-white
+                       px-3 py-2.5 text-sm font-medium text-gray-900
+                       placeholder-gray-400
+                       transition focus:border-indigo-500
+                       focus:ring-2 focus:ring-indigo-200 focus:outline-none">
             </div>
+        @endif
 
-            <div class="flex bg-slate-200 p-1 rounded-2xl w-full md:w-auto shadow-inner">
-                <button @click="vista = 'perfiles'"
-                    :class="vista === 'perfiles' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700'"
-                    class="flex-1 md:flex-none px-6 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa- Donald-tub"></i> Aluminio
-                </button>
-                <button @click="vista = 'vidrio'"
-                    :class="vista === 'vidrio' ? 'bg-[#1e293b] text-blue-400 shadow-md' :
-                        'text-slate-500 hover:text-slate-700'"
-                    class="flex-1 md:flex-none px-6 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-gem"></i> Vidrio
-                </button>
+        {{-- CHECKBOX SOBRELUZ --}}
+        <div class="flex items-end sm:col-span-2 lg:col-span-5 pt-2">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+                <input type="checkbox" wire:model.live="conSobreluz"
+                    class="h-5 w-5 rounded border-gray-300
+                       text-indigo-600
+                       focus:ring-2 focus:ring-indigo-300">
+                <span class="text-sm font-medium text-gray-700">
+                    Puerta con sobreluz
+                </span>
+            </label>
+        </div>
+
+    </div>
+
+
+    {{-- CONTENIDO --}}
+    <div class="lg:flex gap-6">
+
+        {{-- PLANO TÉCNICO --}}
+        <div class="w-full lg:w-1/2 bg-gray-50 border rounded-2xl p-6 shadow-inner flex flex-col items-center">
+
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full mb-6">
+                Plano Técnico · Serie {{ $material }}
+            </span>
+
+            {{-- CONTENEDOR GENERAL --}}
+            <div class="relative w-[220px] lg:w-[280px]
+        {{ $conSobreluz ? ' h-[500px] lg:h-[600px]' : 'h-[450px] lg:h-[520px]' }}
+        border-[8px] shadow-xl ring-1 ring-black/10 border-4 border-b-0
+        flex flex-col bg-white"
+                style="border-color: {{ $color === 'negro' ? '#1a1a1a' : '#525252' }}">
+
+                {{-- COTA ALTO TOTAL --}}
+                <div
+                    class="absolute -left-14 top-0 h-full flex flex-col items-center justify-between text-[10px] text-gray-600">
+                    <span>{{ $altoTotal }} cm</span>
+                    <div class="w-px flex-1 bg-gray-400"></div>
+                    <span>ALTO</span>
+                </div>
+
+                {{-- SOBRELUZ --}}
+                @if ($conSobreluz && isset($datos['Vidrio Sobreluz']))
+                    <div class="relative bg-sky-200/50 border-b-[6px] border-black
+                flex items-center justify-center"
+                        style="height: {{ max(80, $altoSobreluz) }}px">
+
+                        <div class="text-center">
+                            <div class="text-[10px] font-black uppercase text-gray-700">
+                                Vidrio Sobreluz
+                            </div>
+                            <div class="text-[11px] font-mono text-gray-800">
+                                {{ $datos['Vidrio Sobreluz']['medida'] }}
+                            </div>
+                        </div>
+
+                        <span class="absolute right-2 top-1 text-[9px] text-gray-500">
+                            {{ $altoSobreluz }} cm
+                        </span>
+                    </div>
+                @endif
+
+                {{-- PUERTA --}}
+                <div class="flex-1 flex flex-col justify-between p-1">
+
+                    {{-- VIDRIO SUPERIOR --}}
+                    <div
+                        class="flex-1 bg-sky-200/50 border-black border-8 border-b-0
+                flex flex-col items-center justify-center shadow-inner">
+
+                        <span class="text-[10px] font-black uppercase text-sky-800">
+                            Vidrio
+                        </span>
+                        <span class="text-[11px] font-mono text-sky-900">
+                            {{ $datos['Vidrio']['medida'] ?? '—' }}
+                        </span>
+                    </div>
+
+                    {{-- TRAVESAÑO --}}
+                    <div
+                        class="h-[40px] bg-gray-700
+                flex items-center justify-between px-3
+                text-white text-xs relative">
+
+                        <span class="font-bold">REF 5227</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono">
+                                {{ $datos['5227']['medida'] ?? '—' }} cm
+                            </span>
+                            <div
+                                class="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center bg-gray-400/20">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full shadow-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="absolute left-[-4px] top-0 h-full flex flex-col justify-around py-12">
+                        <div class="w-2 h-8 bg-gray-400 rounded-sm border border-black/20"></div>
+                        <div class="w-2 h-8 bg-gray-400 rounded-sm border border-black/20"></div>
+                        <div class="w-2 h-8 bg-gray-400 rounded-sm border border-black/20"></div>
+                    </div>
+                    {{-- VIDRIO INFERIOR --}}
+                    <div
+                        class="flex-1 bg-sky-200/50 border-black border-8 border-t-0
+                flex flex-col items-center justify-center shadow-inner">
+
+                        <span class="text-[10px] font-black uppercase text-sky-800">
+                            Vidrio
+                        </span>
+                        <span class="text-[11px] font-mono text-sky-900">
+                            {{ $datos['Vidrio']['medida'] ?? '—' }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- COTA ANCHO --}}
+                <div
+                    class="absolute -bottom-10 left-0 w-full flex items-center justify-between text-[10px] text-gray-600">
+                    <span>{{ $anchoTotal }} cm</span>
+                    <div class="h-px flex-1 bg-gray-400 mx-2"></div>
+                    <span>ANCHO</span>
+                </div>
             </div>
         </div>
 
-        <div class="min-h-[500px]">
+        {{-- TABLA ACCESORIOS --}}
+        <div
+            class="w-full lg:w-1/2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6 lg:mt-0">
 
-            <div x-show="vista === 'perfiles'" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
-                class="space-y-6">
-                @php
-                    $longitudVarilla = 595;
-                    $corteExtra = 0.5;
-                    $gruposAlu = [];
-                    $excluir = ['bisagra', '3x3', 'tornillo', 'felpa', 'empaque', 'jalador', 'pijas', 'escuadra'];
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 bg-blue-600 text-white">
+                <div class="flex items-center gap-2 font-semibold">
+                    <i class="fa-solid fa-toolbox"></i>
+                    Accesorios
+                </div>
+                <span class="text-xs bg-blue-500 px-3 py-1 rounded-full">
+                    {{ count($datos) }} items
+                </span>
+            </div>
 
-                    foreach ($datos as $nombre => $item) {
-                        $nombreLower = strtolower($nombre);
-                        $esAcc = false;
-                        foreach ($excluir as $ex) {
-                            if (str_contains($nombreLower, $ex)) {
-                                $esAcc = true;
-                            }
-                        }
+            <!-- Tabla -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-blue-50 text-blue-700 text-xs uppercase">
+                        <tr>
+                            <th class="px-6 py-3 text-left">Perfil</th>
+                            <th class="px-6 py-3 text-center">Medida</th>
+                            <th class="px-6 py-3 text-right">Cant.</th>
+                        </tr>
+                    </thead>
 
-                        if (!$esAcc && !str_contains($nombreLower, 'vidrio') && (float) $item['medida'] > 0) {
-                            preg_match('/\d{4,}/', $nombre, $matches);
-                            $cod = $matches[0] ?? 'Perfiles';
-                            for ($i = 0; $i < $item['cantidad']; $i++) {
-                                $gruposAlu[$cod][] = [
-                                    'n' => preg_replace('/\d{4,}/', '', $nombre),
-                                    'm' => (float) $item['medida'],
-                                ];
-                            }
-                        }
-                    }
-                @endphp
+                    <tbody class="divide-y divide-slate-200 text-xs">
+                        @forelse($datos as $nombre => $item)
+                            @if (str_starts_with($nombre, 'Vidrio'))
+                                @continue
+                            @endif
+                            @php
+                                // Extraer código desde el nombre del perfil
+                                preg_match('/^\d+/', $nombre, $m);
+                                $codigoBuscado = $m[0] ?? null;
 
-                @forelse($gruposAlu as $cod => $piezas)
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                @php
-                                    // Buscamos el nombre del producto en el array del Excel que contenga el código
-                                    $nombreProductoExcel = 'Perfil no identificado';
+                                // Valor por defecto
+                                $nombreProductoExcel = $nombre;
 
-                                    foreach ($data as $producto) {
-                                        // Si el nombre del producto en el Excel contiene el código (ej: "1451")
-                                        if (str_contains($producto, $cod)) {
-                                            $nombreProductoExcel = $producto;
+                                // Buscar coincidencia en Excel
+                                if ($codigoBuscado) {
+                                    foreach ($data ?? [] as $nombreCompleto) {
+                                        if (str_contains((string) $nombreCompleto, (string) $codigoBuscado)) {
+                                            $nombreProductoExcel = $nombreCompleto;
                                             break;
                                         }
                                     }
-                                @endphp
+                                }
+                            @endphp
 
-                                <div class="flex flex-col">
-                                    <span class="bg-blue-600 text-white px-3 py-1 rounded-lg font-black text-sm w-fit">
 
+                            <tr class="hover:bg-blue-50 transition">
+
+                                {{-- PERFIL CALCULADO --}}
+                                <td class="px-6 py-4 font-medium text-slate-700">
+                                    {{ $nombreProductoExcel }}
+                                </td>
+
+                                {{-- MEDIDA --}}
+                                <td class="px-6 py-4 text-center">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full
+                   bg-indigo-100 text-indigo-700 font-mono text-xs">
+                                        {{ $item['medida'] }}
+                                    </span>
+                                </td>
+
+                                {{-- CANTIDAD --}}
+                                <td class="px-6 py-4 text-right">
+                                    <span
+                                        class="inline-flex items-center justify-center min-w-[3rem]
+                   px-3 py-1 rounded-full
+                   bg-emerald-100 text-emerald-700 font-bold tabular-nums">
+                                        {{ $item['cantidad'] }}
+                                    </span>
+                                </td>
+
+                                {{-- NOMBRE DESDE EXCEL --}}
+                                {{-- <td class="px-6 py-4">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+            {{ $nombreProductoExcel === 'Perfil no identificado' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
                                         {{ $nombreProductoExcel }}
                                     </span>
-                                </div>
-                            </div>
-                            <span
-                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ count($piezas) }}
-                                cortes totales</span>
-                        </div>
+                                </td> --}}
 
-                        <div class="p-6 gap-x-12 gap-y-8">
-                            @php
-                                $varillas = [];
-                                $actual = ['p' => [], 'u' => 0];
-                                foreach ($piezas as $p) {
-                                    if ($actual['u'] + $p['m'] + $corteExtra > $longitudVarilla) {
-                                        $varillas[] = $actual;
-                                        $actual = ['p' => [], 'u' => 0];
-                                    }
-                                    $actual['p'][] = $p;
-                                    $actual['u'] += $p['m'] + $corteExtra;
-                                }
-                                if (!empty($actual['p'])) {
-                                    $varillas[] = $actual;
-                                }
-                            @endphp
+                            </tr>
 
-                            @foreach ($varillas as $idx => $v)
-                                <div
-                                    class="group/varilla bg-slate-50/50 p-2 mb-1.5 rounded-xl border border-slate-200 hover:bg-white transition-all duration-200">
-
-                                    <div class="flex justify-between items-center mb-1 px-1">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="text-[9px] font-black bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">#{{ $idx + 1 }}</span>
-                                            <h4
-                                                class="text-[10px] font-black text-slate-700 uppercase tracking-tighter">
-                                                VARILLA {{ $idx + 1 }}</h4>
-                                        </div>
-
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1">
-                                                <span
-                                                    class="text-[9px] font-bold text-slate-400 uppercase italic">Retaso:</span>
-                                                <span
-                                                    class="text-[10px] font-mono font-black text-emerald-600 bg-emerald-50 px-1.5 rounded border border-emerald-100">
-                                                    {{ $longitudVarilla - round($v['u'], 1) }} cm
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        class="relative h-7 w-full bg-slate-200 rounded-lg flex p-0.5 gap-0.5 border border-slate-300 shadow-inner overflow-hidden">
-
-                                        @foreach ($v['p'] as $pz)
-                                            @php
-                                                $anchoPct = ($pz['m'] / $longitudVarilla) * 100;
-
-                                                $colores = [
-                                                    'bg-blue-500 border-blue-600',
-                                                    'bg-indigo-500 border-indigo-600',
-                                                    'bg-violet-500 border-violet-600',
-                                                    'bg-cyan-500 border-cyan-600',
-                                                    'bg-sky-500 border-sky-600',
-                                                    'bg-slate-600 border-slate-700',
-                                                ];
-                                                $colorSeleccionado = $colores[array_rand($colores)];
-                                            @endphp
-
-                                            <div class="h-full {{ $colorSeleccionado }} border rounded flex items-center justify-center group relative cursor-help transition-all hover:brightness-110 shadow-sm"
-                                                style="width: {{ $anchoPct }}%">
-
-                                                <span class="text-[9px] font-black text-white drop-shadow-sm">
-                                                    {{ round($pz['m'], 1) }}
-                                                </span>
-
-                                                <div
-                                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                                                    <div
-                                                        class="bg-slate-900 text-white text-[9px] py-1 px-3 rounded-md shadow-xl border border-slate-700 whitespace-nowrap">
-                                                        <span
-                                                            class="font-black text-blue-300">{{ $pz['n'] }}</span>
-                                                        | {{ $pz['m'] }} cm
-                                                    </div>
-                                                    <div
-                                                        class="w-2 h-2 bg-slate-900 rotate-45 -mt-1 mx-auto border-r border-b border-slate-700">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-
-                                        @php $porcentajeRestante = 100 - (($v['u'] / $longitudVarilla) * 100); @endphp
-                                        <div class="h-full opacity-20 bg-desperdicio"
-                                            style="width: {{ $porcentajeRestante }}%"></div>
-                                    </div>
-                                </div>
-                            @endforeach
-
-                            <style>
-                                .bg-desperdicio {
-                                    background-color: #94a3b8;
-                                    background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #475569 4px, #475569 5px);
-                                }
-                            </style>
-                        </div>
-                    </div>
-                @empty
-                    <div class="bg-white p-20 rounded-3xl border-2 border-dashed border-slate-200 text-center">
-                        <p class="text-slate-400 font-bold uppercase text-sm">No se detectaron perfiles para optimizar
-                        </p>
-                    </div>
-                @endforelse
-            </div>
-            <div x-show="vista === 'vidrio'" x-transition
-                class="bg-slate-50 p-6 rounded-xl border border-slate-300 shadow-2xl">
-
-                <div
-                    class="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-4 rounded-lg border border-slate-200 shadow-sm gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-yellow-400 rounded-lg shadow-sm">
-                            <i class="fa-solid fa-ruler-combined text-slate-800"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-black text-slate-800 uppercase leading-none">Mapa de Corte
-                                Industrial</h2>
-                            <p class="text-[10px] text-blue-600 font-bold uppercase tracking-widest mt-1">Consolidado
-                                de Retales y Área Neta</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <div class="text-right">
-                            <p class="text-[9px] font-black text-slate-400 uppercase">Formato de Plancha</p>
-                            <select wire:model.live="dimensionPlancha"
-                                class="bg-slate-50 border-2 border-slate-200 text-xs font-black rounded px-3 py-1 outline-none focus:border-blue-500">
-                                <option value="214x330">214 x 330 cm</option>
-                                <option value="213.5x330">213.5 x 330 cm</option>
-                                <option value="183x244">183 x 244 cm</option>
-                                <option value="150x200">150 x 200 cm</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                @php
-                    $dim = explode('x', $dimensionPlancha ?? '214x330');
-                    $altoP = (float) ($dim[0] ?? 214);
-                    $anchoP = (float) ($dim[1] ?? 330);
-
-                    $piezas = [];
-                    $areaCorteCm2 = 0;
-                    foreach ($datos as $nom => $it) {
-                        if (str_contains(strtolower($nom), 'vidrio') && !empty($it['medida'])) {
-                            $m = explode('x', $it['medida']);
-                            $h = (float) $m[0];
-                            $w = (float) $m[1];
-                            $cant = $it['cantidad'] ?? 1;
-                            for ($i = 0; $i < $cant; $i++) {
-                                $piezas[] = ['h' => $h, 'w' => $w];
-                                $areaCorteCm2 += $h * $w;
-                            }
-                        }
-                    }
-
-                    $piesCuadradosNetos = $areaCorteCm2 / 929.03;
-
-                    $curX = 0;
-                    $curY = 0;
-                    $anchoColumnaActual = 0;
-                    $maxAnchoUsadoPct = 0;
-                    $sobrantesColumnas = [];
-                    $areaSobranteTotalCm2 = 0;
-
-                    foreach ($piezas as $idx => $p) {
-                        $wPct = ($p['w'] / $anchoP) * 100;
-                        $hPct = ($p['h'] / $altoP) * 100;
-
-                        if ($curY + $hPct > 100.1) {
-                            $altoSob = $altoP - ($curY * $altoP) / 100;
-                            $anchoSob = ($anchoColumnaActual * $anchoP) / 100;
-                            $areaSobranteTotalCm2 += $altoSob * $anchoSob;
-
-                            $sobrantesColumnas[] = [
-                                'x' => $curX,
-                                'w' => $anchoColumnaActual,
-                                'y' => $curY,
-                                'h' => 100 - $curY,
-                                'val' => $altoSob,
-                            ];
-
-                            $curY = 0;
-                            $curX += $anchoColumnaActual;
-                            $anchoColumnaActual = 0;
-                        }
-                        $anchoColumnaActual = max($anchoColumnaActual, $wPct);
-                        $maxAnchoUsadoPct = max($maxAnchoUsadoPct, $curX + $wPct);
-                        $curY += $hPct;
-                    }
-
-                    $ultimoSobH = $altoP - ($curY * $altoP) / 100;
-                    if ($ultimoSobH > 0) {
-                        $areaSobranteTotalCm2 += $ultimoSobH * (($anchoColumnaActual * $anchoP) / 100);
-                    }
-
-                    $sobranteLatW = $anchoP - ($maxAnchoUsadoPct * $anchoP) / 100;
-                    if ($sobranteLatW > 0) {
-                        $areaSobranteTotalCm2 += $sobranteLatW * $altoP;
-                    }
-
-                    $piesCuadradosRetal = $areaSobranteTotalCm2 / 929.03;
-                @endphp
-
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <div id="area-mapa-corte"
-                        class="lg:col-span-8 flex flex-col items-center bg-white p-12 rounded-2xl border border-slate-200 shadow-inner relative">
-
-                        <div class="absolute left-1 top-12 bottom-12 flex flex-col items-center justify-between py-4">
-                            <div class="w-[2px] h-full bg-blue-500 relative">
-                                <span class="absolute -top-2 -left-[4px] text-blue-500 text-[10px]">▲</span>
-                                <span class="absolute -bottom-2 -left-[4px] text-blue-500 text-[10px]">▼</span>
-                            </div>
-                            <span
-                                class="absolute top-1/2 rotate-45 whitespace-nowrap text-[11px] font-black text-blue-700 bg-white px-2">
-                                {{ $altoP }} cm
-                            </span>
-                        </div>
-
-                        <div class="relative border-[3px] border-slate-900 bg-[#FFEA00] shadow-2xl overflow-hidden"
-                            style="width: 530px; height: 314px;">
-
-                            @php
-                                $curX = 0;
-                                $curY = 0;
-                                $anchoColumnaActual = 0;
-                                $maxAnchoUsadoPct = 0;
-                                $maxAltoUsadoEnColumnaPct = 0;
-                            @endphp
-
-                            @foreach ($piezas as $p)
-                                @php
-                                    $wPct = ($p['w'] / $anchoP) * 100;
-                                    $hPct = ($p['h'] / $altoP) * 100;
-
-                                    if ($curY + $hPct > 100.1) {
-                                        $curY = 0;
-                                        $curX += $anchoColumnaActual;
-                                        $anchoColumnaActual = 0;
-                                    }
-                                    $anchoColumnaActual = max($anchoColumnaActual, $wPct);
-                                    $maxAnchoUsadoPct = max($maxAnchoUsadoPct, $curX + $wPct);
-                                    $maxAltoUsadoEnColumnaPct = max($maxAltoUsadoEnColumnaPct, $curY + $hPct);
-                                @endphp
-
-                                <div class="absolute border border-slate-900 bg-white flex items-center justify-center overflow-hidden transition-all hover:bg-blue-50"
-                                    style="left: {{ $curX }}%; top: {{ $curY }}%; width: {{ $wPct }}%; height: {{ $hPct }}%;">
-                                    <div class="flex items-center gap-1 px-1">
-                                        <span
-                                            class="text-[9px] font-black text-slate-800">{{ round($p['w'], 1) }}</span>
-                                        <span class="text-[7px] font-bold text-slate-400">x</span>
-                                        <span class="text-[9px] font-black text-slate-800">{{ round($p['h'], 1) }}
-                                            cm</span>
-                                    </div>
-                                </div>
-
-                                @php $curY += $hPct; @endphp
-                            @endforeach
-
-                            {{-- LÓGICA DE RETALES CON DIMENSIONES TOTALES --}}
-                            @php
-                                // Retal lateral (Derecha)
-                                $retalLateralAncho = $anchoP - ($maxAnchoUsadoPct * $anchoP) / 100;
-                                $retalLateralAlto = $altoP;
-
-                                // Retal inferior (Debajo de las piezas)
-                                $retalInferiorAncho = ($maxAnchoUsadoPct * $anchoP) / 100;
-                                $retalInferiorAlto = $altoP - ($maxAltoUsadoEnColumnaPct * $altoP) / 100;
-                            @endphp
-
-                            {{-- Render Retal Lateral --}}
-                            @if ($retalLateralAncho > 1)
-                                <div class="absolute top-0 right-0 h-full border-l-2 border-dashed border-red-600 bg-yellow-400 flex flex-col items-center justify-center"
-                                    style="width: {{ 100 - $maxAnchoUsadoPct }}%;">
-                                    <div
-                                        class="bg-red-700 text-white px-2 py-1 rounded shadow-lg flex flex-col items-center">
-                                        <span class="text-[11px] font-black whitespace-nowrap">
-                                            {{ round($retalLateralAncho, 1) }} x {{ round($retalLateralAlto, 1) }} cm
-                                        </span>
-                                    </div>
-                                </div>
-                            @endif
-
-                            {{-- Render Retal Inferior --}}
-                            @if ($retalInferiorAlto > 1 && $maxAnchoUsadoPct > 0)
-                                <div class="absolute bottom-0 left-0 border-t-2 border-dashed border-red-600 bg-yellow-400 flex items-center justify-center"
-                                    style="width: {{ $maxAnchoUsadoPct }}%; height: {{ 100 - $maxAltoUsadoEnColumnaPct }}%;">
-                                    <div
-                                        class="bg-red-700 text-white px-2 py-1 rounded shadow-lg flex flex-col items-center">
-                                        <span class="text-[10px] font-black whitespace-nowrap">
-                                            {{ round($retalInferiorAncho, 1) }} x {{ round($retalInferiorAlto, 1) }}
-                                            cm
-                                        </span>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="w-[330px] mt-4 flex items-center justify-between px-1">
-                            <div class="h-[2px] w-full bg-blue-500 relative">
-                                <span class="absolute -left-1 -top-[4.5px] text-blue-500 text-[10px]">◀</span>
-                                <span class="absolute -right-1 -top-[4.5px] text-blue-500 text-[10px]">▶</span>
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <span class="bg-white px-3 text-[11px] font-black text-blue-700 uppercase">
-                                        {{ $anchoP }} cm
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-4 space-y-4">
-                        <div
-                            class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group border border-slate-800">
-                            <div
-                                class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-gem text-5xl"></i>
-                            </div>
-                            <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Área Útil
-                                (pies)</span>
-                            <div class="flex items-baseline gap-2 mt-1">
-                                <h3 class="text-4xl font-black text-white">{{ number_format($piesCuadradosNetos, 2) }}
-                                </h3>
-                                <span class="text-lg font-bold text-slate-500 italic">ft²</span>
-                            </div>
-                        </div>
-
-                        <div
-                            class="bg-white rounded-3xl p-6 border-2 border-yellow-400 shadow-xl relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-4 opacity-10">
-                                <i class="fa-solid fa-recycle text-5xl text-yellow-600"></i>
-                            </div>
-                            <span class="text-[10px] font-bold text-yellow-600 uppercase tracking-widest">Retaso Total
-                                (pies)</span>
-                            <div class="flex items-baseline gap-2 mt-1">
-                                <h3 class="text-4xl font-black text-slate-800">
-                                    {{ number_format($piesCuadradosRetal, 2) }}</h3>
-                                <span class="text-lg font-bold text-slate-400 italic">ft²</span>
-                            </div>
-                            <p class="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-tight leading-tight">
-                                * Incluye lateral de <span
-                                    class="text-slate-600">{{ round($retalLateralAncho, 1) }}cm</span> y restos de
-                                corte.
-                            </p>
-                        </div>
-
-                        <button onclick="window.print()"
-                            class="w-full bg-slate-800 hover:bg-slate-900 text-white p-4 rounded-3xl shadow-lg transition-all duration-300 flex items-center justify-center gap-4 group active:scale-95">
-                            <div class="bg-slate-700 p-2 rounded-xl border border-slate-600">
-                                <i class="fa-solid fa-print text-xl text-blue-400"></i>
-                            </div>
-                            <div class="text-left">
-                                <span class="block text-xs font-black uppercase tracking-widest text-white">Imprimir
-                                    Plano</span>
-                                <span class="text-[10px] font-medium opacity-60 text-slate-300">Solo el esquema
-                                    técnico</span>
-                            </div>
-                        </button>
-                    </div>
-
-                    <style>
-                        @media print {
-                            body * {
-                                visibility: hidden !important;
-                            }
-
-                            #area-mapa-corte,
-                            #area-mapa-corte * {
-                                visibility: visible !important;
-                            }
-
-                            #area-mapa-corte {
-                                position: absolute !important;
-                                left: 0 !important;
-                                top: 0 !important;
-                                width: 100% !important;
-                                padding: 0 !important;
-                                margin: 0 !important;
-                                background: white !important;
-                            }
-
-                            * {
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-
-                            .shadow-2xl,
-                            .shadow-inner,
-                            .shadow-xl {
-                                box-shadow: none !important;
-                            }
-
-                            button,
-                            .no-print {
-                                display: none !important;
-                            }
-                        }
-                    </style>
-                </div>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="py-14 text-center text-slate-400 italic">
+                                    No hay datos calculados
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
+
+        <iframe id="iframePuertas" data-url="{{ route('puertas.imprimir') }}" class="hidden"></iframe>
+
+
+        <script>
+            window.addEventListener('imprimir-puertas', () => {
+                const iframe = document.getElementById('iframePuertas');
+                iframe.src = iframe.dataset.url;
+
+                iframe.onload = function() {
+
+                    setTimeout(() => {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+
+                    }, 600);
+                };
+            });
+        </script>
+
     </div>
+
+    {{-- ESTILOS --}}
+    <style>
+        .input-base {
+            @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+        }
+
+        body {
+            background: #f3f4f6;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
+</div>
+<script>
+    window.addEventListener('correcto', () => {
+        iziToast.success({
+            message: event.detail,
+            position: 'topRight',
+            timeout: 5000,
+            progressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+            transitionIn: 'bounce',
+            zindex: 999999
+        });
+    });
+    window.addEventListener('delete', () => {
+        iziToast.info({
+            message: event.detail,
+            position: 'topRight',
+            timeout: 5000,
+            progressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+            transitionIn: 'bounce',
+            zindex: 999999
+        });
+    });
+</script>

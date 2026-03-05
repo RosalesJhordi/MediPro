@@ -13,6 +13,17 @@
         }
 
         @media print {
+            .puerta-print {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin-bottom: 12mm;
+            }
+
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+            }
+
             body {
                 zoom: 0.7;
                 background: white !important;
@@ -35,9 +46,9 @@
 
 <body class="bg-gray-100 text-gray-900 text-sm">
 
-    <div class="max-w-6xl mx-auto p-8 space-y-20">
+    <div class="max-w-6xl mx-auto p-2 space-y-15">
 
-        @foreach ($datos as $puerta)
+        @foreach ($datos as $index => $puerta)
             @php
                 $datosPuerta = $puerta['datos'];
 
@@ -52,7 +63,7 @@
                 }
             @endphp
 
-            <div class="">
+            <div class="puerta-print">
 
                 {{-- ================= HEADER ================= --}}
                 <div class="bg-white rounded-2xl border border-blue-100 p-3 mb-4">
@@ -96,7 +107,7 @@
 
                         <div
                             class="relative w-[240px]
-    {{ $puerta['conSobreluz'] ?? false ? 'h-[560px]' : 'h-[500px]' }}
+    {{ $puerta['conSobreluz'] ?? false ? 'h-[460px]' : 'h-[400px]' }}
     border-[6px] rounded-xl ring-1 ring-black/10 bg-white flex flex-col">
 
                             {{-- COTA ALTO --}}
@@ -243,6 +254,9 @@
 
                 </div>
             </div>
+            @if (($index + 1) % 2 === 0)
+                <div class="page-break"></div>
+            @endif
         @endforeach
 
     </div>

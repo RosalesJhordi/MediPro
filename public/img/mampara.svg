@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+
+    <!-- Marco exterior -->
+    <rect x="6" y="10" width="52" height="44" rx="6"
+        stroke="#1F2937" stroke-width="3"/>
+
+    <!-- División central (dos hojas) -->
+    <line x1="32" y1="10" x2="32" y2="54"
+        stroke="#1F2937" stroke-width="2"/>
+
+    <!-- Panel vidrio izquierdo -->
+    <rect x="9" y="13" width="21" height="38" rx="2"
+        fill="#93C5FD" opacity="0.35"/>
+
+    <!-- Panel vidrio derecho -->
+    <rect x="34" y="13" width="21" height="38" rx="2"
+        fill="#93C5FD" opacity="0.35"/>
+
+    <!-- Riel inferior -->
+    <rect x="6" y="50" width="52" height="4"
+        fill="#1F2937"/>
+
+    <!-- Manijas sutiles -->
+    <rect x="27" y="28" width="2" height="8" rx="1" fill="#1F2937"/>
+    <rect x="35" y="28" width="2" height="8" rx="1" fill="#1F2937"/>
+
+</svg>

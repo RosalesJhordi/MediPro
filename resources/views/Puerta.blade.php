@@ -16,10 +16,12 @@
                 transform: translateY(0px);
                 box-shadow: 0 5px 15px 0px rgba(217, 119, 6, 0.4);
             }
+
             50% {
                 transform: translateY(-8px);
                 box-shadow: 0 20px 25px -5px rgba(217, 119, 6, 0.3);
             }
+
             100% {
                 transform: translateY(0px);
                 box-shadow: 0 5px 15px 0px rgba(217, 119, 6, 0.4);
@@ -40,7 +42,10 @@
     </a>
 
     <livewire:puertas.app />
-
+    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-2 tracking-[0.2em] uppercase text-gray-400">
+        by <a href="https://www.facebook.com/share/1Eh3Dx3iKB/" target="_blank" rel="noopener noreferrer">
+            <span class="font-bold text-blue-600">Jhon Rosales</span></a>
+    </p>
 </body>
 
 </html>

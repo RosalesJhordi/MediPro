@@ -12,6 +12,8 @@
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://unpkg.com/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack-all.min.js"></script>
 
 
     <script src="https://unpkg.com/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
@@ -39,8 +41,16 @@
             animation: floating 3s ease-in-out infinite;
         }
     </style>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
 </head>
-<body>
+
+<body class="bg-gray-100 h-screen relative">
+
+    <a href="Ventana"
+        class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12  bg-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">
+        <i class="fi fi-sr-left"></i>
+    </a>
     <livewire:optimizador.app />
 </body>
+
 </html>

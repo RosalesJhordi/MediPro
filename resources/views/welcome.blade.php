@@ -198,10 +198,18 @@
             ¿Qué desea realizar <span class="font-bold text-gray-700">hoy</span>?
         </p>
 
-        <div class="flex items-center justify-center w-full  gap-6 p-2 lg:p-4 mt-6">
+        <div class="grid grid-cols-2 lg:grid-cols-3 items-center justify-center w-full gap-6 p-2 lg:p-4 mt-6">
 
             <a href="Ventana" wire:navigate
-                class="flex flex-col items-center justify-center w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                class="flex flex-col items-center justify-center w-full lg:w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                <span
+                    class="absolute -top-2 -right-2
+                 px-2.5 py-1
+                  font-bold uppercase tracking-wide
+                 bg-green-500 text-white
+                 rounded-full shadow-md text-[8px]">
+                    Disponible
+                </span>
                 <div
                     class="p-3 lg:p-4 rounded-2xl bg-gradient-to-tr bg-green-400 to-emerald-600 text-white shadow-[0_10px_20px_rgba(16,185,129,0.2)]">
                     <img src="{{ asset('img/ventana.svg') }}" class="w-10 h-10 " alt="Ventana">
@@ -210,13 +218,54 @@
             </a>
 
             <a href="Puerta" wire:navigate
-                class="flex flex-col items-center justify-center w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                class="flex flex-col items-center justify-center w-full lg:w-1/2 h-40 lg:w-40 lg:h-40 p-1.5 lg:p-4 space-y-2 lg:space-y-4 transition-transform cursor-pointer glass-card rounded-3xl hover:scale-105 active:scale-95">
+                <span
+                    class="absolute -top-2 -right-2
+                 px-2.5 py-1
+                  font-bold uppercase tracking-wide
+                 bg-green-500 text-white
+                 rounded-full shadow-md text-[8px]">
+                    Disponible
+                </span>
                 <div
                     class=" p-3 lg:p-4 rounded-2xl bg-gradient-to-tr bg-orange-400 to-red-600 text-white shadow-[0_10px_20px_rgba(239,68,68,0.2)]">
                     <img src="{{ asset('img/puerta.svg') }}" class="w-10 h-10" alt="Puerta">
                 </div>
                 <span class="text-sm font-bold text-gray-700">Puerta</span>
             </a>
+
+            <a wire:navigate
+                class="relative flex cursor-not-allowed flex-col items-center justify-center
+          w-full lg:w-1/2 h-40 lg:w-40 lg:h-40
+          p-2 lg:p-4 space-y-3
+          transition-transform
+          glass-card rounded-3xl
+          hover:scale-105 active:scale-95">
+
+                {{-- BADGE flotante --}}
+                <span
+                    class="absolute -top-2 -right-2
+                 px-2.5 py-1
+                  font-bold uppercase tracking-wide
+                 bg-amber-500 text-white
+                 rounded-full shadow-md text-[8px]">
+                    Próximamente
+                </span>
+
+                {{-- ICONO MAMPARA (SVG inline) --}}
+                <div class="p-3 lg:p-4 rounded-2xl bg-gray-200 text-white shadow-md">
+
+                    <img src="{{ asset('img/mampara.svg') }}" class="w-10 h-10 " alt="Mampara">
+
+                </div>
+
+                {{-- TEXTO --}}
+                <span class="text-sm font-semibold text-gray-700">
+                    Mampara
+                </span>
+
+            </a>
+
 
         </div>
 
