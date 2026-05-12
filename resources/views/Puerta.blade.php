@@ -5,12 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediPro - Puerta</title>
-    <script src="https://kit.fontawesome.com/a22afade38.js" crossorigin="anonymous"></script>
+    @vite('resources/css/app.css')
+<script src="https://kit.fontawesome.com/a22afade38.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    @vite('resources/css/app.css') 
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
 
+
+    <script src="https://unpkg.com/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        /* Animación de flotación suave */
         @keyframes floating {
             0% {
                 transform: translateY(0px);
@@ -32,9 +38,16 @@
             animation: floating 3s ease-in-out infinite;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastjs-notifications@latest/dist/toast-notifications.min.js"></script>
+    <!-- CSS (si usa estilos propios) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.css">
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.js"></script>
 </head>
 
-<body class="bg-gray-100 h-screen relative">
+<body class="relative p-0 m-0">
 
     <a href="/"
         class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12  bg-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">
@@ -42,7 +55,7 @@
     </a>
 
     <livewire:puertas.app />
-    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-2 tracking-[0.2em] uppercase text-gray-400">
+    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-0 tracking-[0.2em] uppercase text-gray-400">
         by <a href="https://www.facebook.com/share/1Eh3Dx3iKB/" target="_blank" rel="noopener noreferrer">
             <span class="font-bold text-blue-600">Jhon Rosales</span></a>
     </p>

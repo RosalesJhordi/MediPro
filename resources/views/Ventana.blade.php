@@ -42,13 +42,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/toastjs-notifications@latest/dist/toast-notifications.min.js"></script>
     <!-- CSS (si usa estilos propios) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.css">
 
-<!-- JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.js"></script>
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.js"></script>
 </head>
 
-<body class="bg-gray-100 h-full relative">
+<body class=" p-0 m-0 relative">
 
     <a href="/"
         class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12 bg-linear-to-br bg-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">
@@ -56,7 +56,7 @@
     </a>
     <livewire:ventanas.app />
 
-    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-2 tracking-[0.2em] uppercase text-gray-400">
+    <p class="text-[10px] z-['999'] text-end px-5 sticky bottom-0 tracking-[0.2em] uppercase text-gray-400">
         by <a href="https://www.facebook.com/share/1Eh3Dx3iKB/" target="_blank" rel="noopener noreferrer">
             <span class="font-bold text-blue-600">Jhon Rosales</span></a>
     </p>

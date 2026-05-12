@@ -613,38 +613,38 @@ new class extends Component {
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Ancho <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.lazy
+            <input type="number" wire:model.blur
             ="ancho"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Alto <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.lazy="alto"
+            <input type="number" wire:model.blur="alto"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Puente <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.lazy="altoPuente"
+            <input type="number" wire:model.blur="altoPuente"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-amber-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Corredizas</label>
-            <input type="number" wire:model.lazy="numCorredizas"
+            <input type="number" wire:model.blur="numCorredizas"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Fijos</label>
-            <input type="number" wire:model.lazy="numFijos"
+            <input type="number" wire:model.blur="numFijos"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
     </div>
 
-    <div wire:ignore
+    <div
         class="flex flex-col items-center justify-center p-4 border border-gray-200 shadow-inner bg-gray-50 md:p-6 rounded-3xl">
 
-        <iframe id="iframeLote" data-url="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
+        <iframe wire:ignore id="iframeLote" data-url="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
 
         <script>
             let yaImprimio = false;

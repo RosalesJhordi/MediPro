@@ -65,56 +65,97 @@ new class extends Component {
         {{-- GRID DE SISTEMAS --}}
         @if (!$PuertaSeleccionado)
 
-            <div class="grid lg:grid-cols-3 grid-cols-2 gap-2 lg:gap-8 animate-fade-in">
-                @php
-                    $puertas = [
-                        [
-                            'id' => 'Puerta Clásica',
-                            'icon' => 'fa-shield-halved',
-                            'color' => 'slate',
-                            'desc' => 'Perfiles reforzados y alta durabilidad.',
-                        ],
-                        [
-                            'id' => 'Puerta - Diseño Personalizable',
-                            'icon' => 'fa-sliders',
-                            'color' => 'cyan',
-                            'desc' => 'Configuración estética y técnica a medida.',
-                        ],
-                        [
-                            'id' => 'Puerta Corrediza - 1 Hoja',
-                            'icon' => 'fa-arrows-left-right',
-                            'color' => 'emerald',
-                            'desc' => '1 Hoja móvile con guiado lineal.',
-                        ],
-                        [
-                            'id' => 'Puerta 2 Hojas',
-                            'icon' => 'fa-door-closed',
-                            'color' => 'amber',
-                            'desc' => 'Doble hoja abatible con cierre central.',
-                        ],
-                        [
-                            'id' => 'Puerta Corrediza - 2 Hoja',
-                            'icon' => 'fa-arrows-left-right',
-                            'color' => 'blue',
-                            'desc' => '2 Hojas móviles con guiado lineal.',
-                        ],
-                    ];
+            @php
+                $puertas = [
+                    [
+                        'id' => 'Puerta Clásica',
+                        'icon' => 'fa-shield-halved',
+                        'color' => 'neutral',
+                        'desc' => 'Perfiles reforzados y alta durabilidad.',
+                    ],
+                ];
+            @endphp
+            {{-- [
+                        'id' => 'Puerta - Diseño Personalizable',
+                        'icon' => 'fa-sliders',
+                        'color' => 'info',
+                        'desc' => 'Configuración estética y técnica a medida.',
+                    ],
 
-                @endphp
+                    [
+                        'id' => 'Puerta Corrediza - 1 Hoja',
+                        'icon' => 'fa-arrows-left-right',
+                        'color' => 'success',
+                        'desc' => '1 hoja móvil con guiado lineal.',
+                    ],
+
+                    [
+                        'id' => 'Puerta 2 Hojas',
+                        'icon' => 'fa-door-closed',
+                        'color' => 'warning',
+                        'desc' => 'Doble hoja abatible con cierre central.',
+                    ],
+
+                    [
+                        'id' => 'Puerta Corrediza - 2 Hojas',
+                        'icon' => 'fa-arrows-left-right',
+                        'color' => 'primary',
+                        'desc' => '2 hojas móviles con guiado lineal.',
+                    ], --}}
+
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
 
                 @foreach ($puertas as $s)
-                    <button wire:click="seleccionar('{{ $s['id'] }}')"
-                        class="group lg:p-6 p-2 bg-white/60  shadow-md backdrop-blur-md border-2 border-transparent rounded-3xl transition-all duration-300 hover:border-blue-500 hover:bg-white/80 flex flex-col justify-between text-center">
-                        <div>
-                            <div
-                                class="w-16 h-16 bg-{{ $s['color'] }}-100 text-{{ $s['color'] }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid {{ $s['icon'] }} text-2xl"></i>
+                    <button wire:click="seleccionar('{{ $s['id'] }}')" class="group">
+
+                        <div
+                            class="relative card bg-base-100 border border-base-300 hover:border-{{ $s['color'] }} hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+
+                            <div class="card-body justify-start items-start p-5 md:p-7">
+
+                                {{-- ICONO --}}
+                                <div
+                                    class="w-16 h-16 rounded-2xl bg-{{ $s['color'] }}/10 text-{{ $s['color'] }} flex items-center justify-center mb-6 transition-all duration-500 group-hover:scale-110">
+
+                                    <i class="fa-solid {{ $s['icon'] }} text-2xl"></i>
+
+                                </div>
+
+                                {{-- TITULO --}}
+                                <h2 class="card-title text-lg md:text-2xl font-black">
+                                    {{ $s['id'] }}
+                                </h2>
+
+                                {{-- DESCRIPCION --}}
+                                <p class="text-base-content/60 mt-2">
+                                    {{ $s['desc'] }}
+                                </p>
+
+                                {{-- BOTON --}}
+                                <div class="mt-6">
+
+                                    <div class="btn btn-{{ $s['color'] }} btn-sm rounded-xl">
+
+                                        Abrir sistema
+
+                                        <i class="fa-solid fa-arrow-right"></i>
+
+                                    </div>
+
+                                </div>
+
                             </div>
-                            <h3 class="lg:text-xl text-md font-bold text-gray-800">{{ $s['id'] }}</h3>
-                            <p class="text-xs lg:text-sm text-gray-500 mt-2">{{ $s['desc'] }}</p>
+
+                            {{-- EFECTO HOVER --}}
+                            <div
+                                class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 bg-gradient-to-br from-{{ $s['color'] }}/10 to-transparent pointer-events-none">
+                            </div>
+
                         </div>
+
                     </button>
                 @endforeach
+
             </div>
         @elseif ($PuertaSeleccionado === 'Puerta Clásica')
             <livewire:puertas.normal />

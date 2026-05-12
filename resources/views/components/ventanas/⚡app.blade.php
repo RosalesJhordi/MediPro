@@ -26,7 +26,7 @@ new class extends Component {
 };
 ?>
 
-<div class="p-2 md:p-5 text-center max-w-7xl mx-auto">
+<div class="p-2 md:p-5 text-center max-w-7xl mx-auto h-full">
 
     <div>
         {{-- HEADER --}}
@@ -90,12 +90,16 @@ new class extends Component {
                         'desc' => 'Alta gama y perfiles reforzados.',
                     ],
                     [
-                        'id' => 'Vitroven',
-                        'icon' => 'fa-bars',
-                        'color' => 'warning',
-                        'desc' => 'Privacidad y control solar.',
+                        'id' => 'Proyectante',
+                        'icon' => 'fa-up-right-from-square',
+                        'color' => 'accent',
+                        'desc' => 'Ventilación inteligente.',
                     ],
-                    [
+
+                ];
+            @endphp
+
+            {{-- [
                         'id' => 'Doble Corrediza',
                         'icon' => 'fa-arrows-left-right',
                         'color' => 'secondary',
@@ -113,8 +117,7 @@ new class extends Component {
                         'color' => 'accent',
                         'desc' => 'Ventilación inteligente.',
                     ],
-                ];
-            @endphp
+            --}}
 
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
 
@@ -168,8 +171,8 @@ new class extends Component {
             </div>
         @elseif ($sistemaSeleccionado === 'Sistema Nova')
             <livewire:ventanas.sistema-nova />
-        @elseif ($sistemaSeleccionado === 'Vitroven')
-            <livewire:ventanas.persiana/>
+        @elseif ($sistemaSeleccionado === 'Proyectante')
+            <livewire:ventanas.proyectante/>
         @else
             <div class="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-12">
                 <div
