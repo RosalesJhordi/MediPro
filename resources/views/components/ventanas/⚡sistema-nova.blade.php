@@ -131,7 +131,7 @@ new class extends Component {
     {
         $d = $this->divisionesInferiores;
         $c = $d >= 5 ? 3 : ($d >= 3 ? 2 : 1);
-        $a = $this->div($this->ancho, $c);
+        $a = $this->div($this->anchoAjustado, $c);
 
         return collect(range(1, $c))
             ->map(
@@ -177,7 +177,7 @@ new class extends Component {
             $det["U F ($a)"] = ['label' => '3003', 'alto' => $a, 'cantidad' => $n];
         }
         foreach ($c as $a => $n) {
-            $det["H ($a)"] = ['label' => '8220', 'alto' => $a, 'cantidad' => $n];
+            $det["H ($a)"] = ['label' => '8220', 'alto' => $a + 0.6, 'cantidad' => $n];
         }
 
         $pf = 0;
@@ -259,7 +259,7 @@ new class extends Component {
         $this->ventanaActiva = count($this->ventanas) - 1;
         $this->cargarVentanaActiva();
 
-        $this->dispatch('correcto','Vista agregada con exito');
+        $this->dispatch('correcto', 'Vista agregada con exito');
     }
 
     // V3: Guardado automático en sesión
@@ -439,6 +439,7 @@ new class extends Component {
 
     public function imprimirTodo(): void
     {
+        $this->cargarVentanaActiva();
         $ventanasCompletas = [];
 
         $estadoOriginal = [
@@ -550,7 +551,7 @@ new class extends Component {
 
         // Guardar en sesión
         session()->put('ventanas', $this->ventanas);
-        $this->dispatch('delete','Vista eliminada con exito');
+        $this->dispatch('delete', 'Vista eliminada con exito');
     }
 };
 
@@ -599,7 +600,8 @@ new class extends Component {
         </div>
         <div class="flex gap-2">
 
-            <button wire:click="imprimirTodo"
+            <button wire:click="imprimirTodo" wire:loading.attr="disabled"
+                onclick="if(window.imprimiendo) return false; window.imprimiendo = true;"
                 class="px-6 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2">
                 <i class="fa-solid fa-file-pdf"></i> IMPRIMIR
             </button>
@@ -611,51 +613,54 @@ new class extends Component {
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Ancho <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.blur
-            ="ancho" oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.lazy
+            ="ancho"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Alto <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.blur="alto" oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.lazy="alto"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Puente <span
                     class="text-blue-500">(cm)</span></label>
-            <input type="number" wire:model.blur="altoPuente" oninput="if(this.value < 0) this.value = 1;"
+            <input type="number" wire:model.lazy="altoPuente"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-amber-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Corredizas</label>
-            <input type="number" wire:model.blur="numCorredizas" min="1" max="3"
-                oninput="if(this.value < 1) this.value = 1; if(this.value > 3) this.value = 3;"
+            <input type="number" wire:model.lazy="numCorredizas"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
         <div class="relative group">
             <label class="block mb-2 ml-1 text-xs font-bold tracking-wider text-gray-500 uppercase">Fijos</label>
-            <input type="number" wire:model.blur="numFijos" min="1" max="3" oninput="if(this.value < 1) this.value = 1; if(this.value > 3) this.value = 3;"
+            <input type="number" wire:model.lazy="numFijos"
                 class="w-full px-4 py-3 font-bold text-gray-700 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none">
         </div>
     </div>
 
-    <div
+    <div wire:ignore
         class="flex flex-col items-center justify-center p-4 border border-gray-200 shadow-inner bg-gray-50 md:p-6 rounded-3xl">
 
         <iframe id="iframeLote" data-url="{{ route('plano.imprimir') }}" style="display:none;"></iframe>
 
         <script>
+            let yaImprimio = false;
+
             window.addEventListener('disparar-impresion-total', () => {
+                if (yaImprimio) return; // 🔒 evita repetición
+                yaImprimio = true;
+
                 const iframe = document.getElementById('iframeLote');
                 iframe.src = iframe.dataset.url;
 
                 iframe.onload = function() {
-
                     setTimeout(() => {
                         iframe.contentWindow.focus();
                         iframe.contentWindow.print();
-
+                        yaImprimio = false; // 🔓 opcional reset
                     }, 600);
                 };
             });
@@ -772,7 +777,6 @@ new class extends Component {
                     </div>
                 </div>
             </div>
-
             <div class="w-full  mt-10 p-2 lg:p-6 bg-white rounded-2xl border border-dashed border-slate-300">
                 <h4
                     class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -845,7 +849,7 @@ new class extends Component {
                 </div>
                 <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Ancho Ajustado</p>
                 <p class="lg:text-3xl text-xl font-black text-slate-800">{{ $this->anchoAjustado }} <span
-                        class="text-sm font-medium text-slate-400">cm</span></p>
+                        class="text-sm font-medium text-slate-400">cm (1 cm + por correiza)</span></p>
             </div>
 
             <div
@@ -878,7 +882,111 @@ new class extends Component {
                         class="text-sm font-medium text-slate-400">und</span></p>
             </div>
         </div>
+        <details class="mt-6 bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+            <summary
+                class="cursor-pointer list-none px-4 py-4 bg-amber-50 hover:bg-amber-100 transition flex items-center justify-between">
 
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-percent text-amber-600"></i>
+                    <span class="text-sm font-black text-amber-700 uppercase tracking-widest">
+                        Ajustes y Descuentos Aplicados
+                    </span>
+                </div>
+
+                <span class="text-xs font-bold text-gray-500">
+                    Ver detalles
+                </span>
+            </summary>
+
+            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+
+                {{-- VIDRIOS --}}
+                <div class="p-3 bg-sky-50 rounded-xl border border-sky-100">
+                    <p class="font-bold text-sky-700 mb-2">Vidrios Fijos</p>
+                    <p class="text-gray-600">
+                        Fórmula aplicada:
+                    </p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        ancho/base + {{ $this->vidrio }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        A los módulos fijos se suma {{ $this->vidrio }} cm para compensar encastre.
+                    </p>
+                </div>
+
+                <div class="p-3 bg-cyan-50 rounded-xl border border-cyan-100">
+                    <p class="font-bold text-cyan-700 mb-2">Vidrios Corredizos</p>
+                    <p class="text-gray-600">
+                        Fórmula aplicada:
+                    </p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        ancho/base - {{ $this->vidrio }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        A los módulos corredizos se descuenta {{ $this->vidrio }} cm por tolerancia de rodamiento.
+                    </p>
+                </div>
+
+                {{-- ALTURAS --}}
+                <div class="p-3 bg-green-50 rounded-xl border border-green-100">
+                    <p class="font-bold text-green-700 mb-2">Altura Fijos</p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        alto puente - {{ $this->vfijo }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        Descuento estructural para panel fijo.
+                    </p>
+                </div>
+
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <p class="font-bold text-emerald-700 mb-2">Altura Corredizas</p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        alto puente - {{ $this->vcorrediza }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        Ajuste por garruchas y desplazamiento.
+                    </p>
+                </div>
+
+                {{-- SOBRELUZ --}}
+                <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <p class="font-bold text-purple-700 mb-2">Sobreluz</p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        alto total - alto puente - {{ $this->sobreluz }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        Se descuenta separación superior estructural.
+                    </p>
+                </div>
+
+                <div class="p-3 bg-orange-50 rounded-xl border border-orange-100">
+                    <p class="font-bold text-orange-700 mb-2">División Superior</p>
+                    <code class="block mt-1 text-[11px] bg-white p-2 rounded border">
+                        ancho dividido - {{ $this->sbancho }} cm
+                    </code>
+                    <p class="mt-2 text-gray-500">
+                        Ajuste lateral en cada sobreluz.
+                    </p>
+                </div>
+
+                {{-- PARANTES --}}
+                <div class="p-3 bg-red-50 rounded-xl border border-red-100 md:col-span-2">
+                    <p class="font-bold text-red-700 mb-2">Parantes Verticales</p>
+                    <div class="grid md:grid-cols-2 gap-2">
+                        <code class="block text-[11px] bg-white p-2 rounded border">
+                            PF Fijo = alto puente - {{ $this->pffijo }} cm
+                        </code>
+                        <code class="block text-[11px] bg-white p-2 rounded border">
+                            PF Corrediza = alto puente - {{ $this->pfcorrediza }} cm
+                        </code>
+                    </div>
+                    <p class="mt-2 text-gray-500">
+                        Ajustes verticales según tipo de módulo.
+                    </p>
+                </div>
+
+            </div>
+        </details>
         <div class="overflow-hidden scroll-auto bg-white border shadow-sm border-slate-200 rounded-2xl">
             <table class="w-full text-left border-collapse">
                 <thead>

@@ -30,93 +30,146 @@ new class extends Component {
 
     <div>
         {{-- HEADER --}}
-        <header class="mb-4 transition-all duration-500">
-            <h1 class="text-2xl md:text-4xl font-black text-gray-800 tracking-tight">
-                @if (!$sistemaSeleccionado)
-                    Configuración
-                @else
-                    <div class="flex flex-col items-center gap-6 mt-4 animate-fade-in">
+        <header class="mb-6 text-center">
 
-                        <span class="text-2xl md:text-4xl font-black text-blue-600 tracking-tighter drop-shadow-sm">
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight text-gray-800">
+
+                @if (!$sistemaSeleccionado)
+                    <span class="relative inline-block">
+
+                        Configuración
+
+                        <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full bg-blue-500">
+                        </span>
+
+                    </span>
+                @else
+                    <div class="flex flex-col items-center gap-5 mt-4 animate-fade-in">
+
+                        <span class="text-3xl md:text-5xl font-black tracking-tight text-blue-600 animate-pulse">
+
                             {{ $sistemaSeleccionado }}
+
                         </span>
 
                         <button wire:click="resetear"
-                            class="group flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 hover:border-amber-300 hover:bg-amber-50 text-gray-500 hover:text-amber-700 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md">
-                            <i class="fa-solid fa-rotate-left text-xs transition-transform group-hover:-rotate-180"></i>
-                            <span class="text-xs font-semibold">
-                                Cambiar
+                            class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:-translate-y-0.5 shadow-sm hover:shadow-md transition-all duration-300">
+
+                            <i
+                                class="fa-solid fa-rotate-left text-xs transition-transform duration-500 group-hover:-rotate-180">
+                            </i>
+
+                            <span class="text-sm font-semibold">
+                                Cambiar sistema
                             </span>
+
                         </button>
 
                     </div>
                 @endif
+
             </h1>
 
             @if (!$sistemaSeleccionado)
-                <p class="text-gray-500 mt-2 text-lg">
+                <p class="text-gray-500 mt-5 text-lg animate-fade-in">
                     Seleccione el tipo de sistema
                 </p>
             @endif
 
-            <div class="h-1 w-20 bg-amber-500 mx-auto mt-4 rounded-full"></div>
         </header>
 
         {{-- GRID DE SISTEMAS --}}
         @if (!$sistemaSeleccionado)
 
-            <div class="grid lg:grid-cols-3 grid-cols-2 gap-2 lg:gap-8 animate-fade-in">
-                @php
-                    $sistemas = [
-                        [
-                            'id' => 'Sistema Nova',
-                            'icon' => 'fa-star',
-                            'color' => 'blue',
-                            'desc' => 'Alta gama y perfiles reforzados.',
-                        ],
-                        [
-                            'id' => 'Persiana',
-                            'icon' => 'fa-bars',
-                            'color' => 'amber',
-                            'desc' => 'Privacidad con sistema enrollable.',
-                        ],
-                        [
-                            'id' => 'Doble Corrediza',
-                            'icon' => 'fa-arrows-left-right',
-                            'color' => 'blue',
-                            'desc' => 'Ambas hojas móviles.',
-                        ],
-                        [
-                            'id' => 'Batiente',
-                            'icon' => 'fa-door-open',
-                            'color' => 'purple',
-                            'desc' => 'Apertura tradicional de 90°.',
-                        ],
-                        [
-                            'id' => 'Proyectante',
-                            'icon' => 'fa-up-right-from-square',
-                            'color' => 'emerald',
-                            'desc' => 'Ventilación controlada superior.',
-                        ],
-                    ];
-                @endphp
+            @php
+                $sistemas = [
+                    [
+                        'id' => 'Sistema Nova',
+                        'icon' => 'fa-star',
+                        'color' => 'primary',
+                        'desc' => 'Alta gama y perfiles reforzados.',
+                    ],
+                    [
+                        'id' => 'Vitroven',
+                        'icon' => 'fa-bars',
+                        'color' => 'warning',
+                        'desc' => 'Privacidad y control solar.',
+                    ],
+                    [
+                        'id' => 'Doble Corrediza',
+                        'icon' => 'fa-arrows-left-right',
+                        'color' => 'secondary',
+                        'desc' => 'Movimiento suave y moderno.',
+                    ],
+                    [
+                        'id' => 'Batiente',
+                        'icon' => 'fa-door-open',
+                        'color' => 'success',
+                        'desc' => 'Apertura clásica optimizada.',
+                    ],
+                    [
+                        'id' => 'Proyectante',
+                        'icon' => 'fa-up-right-from-square',
+                        'color' => 'accent',
+                        'desc' => 'Ventilación inteligente.',
+                    ],
+                ];
+            @endphp
+
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
 
                 @foreach ($sistemas as $s)
-                    <button wire:click="seleccionar('{{ $s['id'] }}')"
-                        class="group lg:p-6 p-2 bg-white/60 backdrop-blur-md border-2 border-transparent rounded-3xl shadow-sm transition-all duration-300 hover:border-blue-500 hover:bg-white/80 flex flex-col justify-between text-center">
-                        <div>
-                            <div
-                                class="w-16 h-16 bg-{{ $s['color'] }}-100 text-{{ $s['color'] }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid {{ $s['icon'] }} text-2xl"></i>
+                    <button wire:click="seleccionar('{{ $s['id'] }}')" class="group">
+
+                        <div
+                            class="card bg-base-100 border flex border-base-300 hover:border-{{ $s['color'] }} hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+
+                            <div class="card-body justify-start items-start p-5 md:p-7">
+
+                                <div
+                                    class="w-16 h-16 rounded-2xl bg-{{ $s['color'] }}/10 text-{{ $s['color'] }} flex items-center justify-center mb-6 transition-all duration-500 group-hover:scale-110">
+
+                                    <i class="fa-solid {{ $s['icon'] }} text-2xl"></i>
+
+                                </div>
+
+                                <h2 class="card-title text-lg md:text-2xl font-black">
+                                    {{ $s['id'] }}
+                                </h2>
+
+                                <p class="text-base-content/60 mt-2">
+                                    {{ $s['desc'] }}
+                                </p>
+
+                                <div class="mt-6">
+
+                                    <div class="btn btn-{{ $s['color'] }} btn-sm rounded-xl">
+
+                                        Abrir sistema
+
+                                        <i class="fa-solid fa-arrow-right"></i>
+
+                                    </div>
+
+                                </div>
+
                             </div>
-                            <h3 class="lg:text-xl text-md font-bold text-gray-800">{{ $s['id'] }}</h3>
-                            <p class="text-xs lg:text-sm text-gray-500 mt-2">{{ $s['desc'] }}</p>
+
+                            {{-- EFECTO --}}
+                            <div
+                                class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 bg-gradient-to-br from-{{ $s['color'] }}/5 to-transparent pointer-events-none">
+                            </div>
+
                         </div>
+
                     </button>
                 @endforeach
+
             </div>
         @elseif ($sistemaSeleccionado === 'Sistema Nova')
             <livewire:ventanas.sistema-nova />
+        @elseif ($sistemaSeleccionado === 'Vitroven')
+            <livewire:ventanas.persiana/>
         @else
             <div class="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-12">
                 <div

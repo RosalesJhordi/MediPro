@@ -48,7 +48,7 @@
 <script src="https://cdn.jsdelivr.net/npm/easy-toast-js@latest/dist/easy-toast-js.min.js"></script>
 </head>
 
-<body class="bg-gray-100 h-screen relative">
+<body class="bg-gray-100 h-full relative">
 
     <a href="/"
         class="fixed z-[999] top-4 left-4 flex items-center justify-center w-12 h-12 bg-linear-to-br bg-orange-600 text-white rounded-2xl shadow-lg transition-colors floating-button border-2 border-white/20">

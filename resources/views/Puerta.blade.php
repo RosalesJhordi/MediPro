@@ -7,7 +7,7 @@
     <title>MediPro - Puerta</title>
     <script src="https://kit.fontawesome.com/a22afade38.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    @vite('resources/css/app.css')
+    @vite('resources/css/app.css') 
 
     <style>
         /* Animación de flotación suave */
